@@ -1,7 +1,7 @@
 {
   "version": "tasco-v0.7",
   "releaseTag": "tasco-v0.7",
-  "sourceCommit": "1ab7272a687d808c03c2be7bc0c7bf275419ef87",
+  "sourceCommit": "82479ce808364307cbf4c877209c4be60ee45edf",
   "runtimeBaseline": "7b13b446555c21551d57ed0d872ba5516845e1bd",
   "buildType": "deploy-closure",
   "dirtySourceAllowed": false,
@@ -279,7 +279,7 @@
     "plugin/governance.js": "5fbd3df78ff183551d2d5aa0c025ad9d5590d3832d69c94b48dea019a42412ac",
     "plugin/package.json": "3ca9d4afd21425087cf31893b8f9f63c81b0b8408db5e343ca76e5f8aa26ab9a",
     "requirements.txt": "0295c16170f7fa707eb3d3c4f2be2b041f1e77dd412b4f0e26a7f74f0a40534b",
-    "run-tasco-task.ps1": "76f2036977b3d6e0a4cdfd821512edddc08994ba3d7dfb0947178b84c051898b",
+    "run-tasco-task.ps1": "99bbc035fe0acc1dbbae7e9da3960f71257f75c9e015ec799535fe7afd72b573",
     "skills/code-guard-workflow/SKILL.md": "819c62f0e396d0a59b4475961a81487ed942bdb19634559e88787357f43f8d1d",
     "skills/code-guard-workflow/agents/openai.yaml": "a81651f6338ef100ea2d2bb9f9906c31ca948dfc6a95c92da5856d2eeff6ce9b",
     "skills/code-guard-workflow/references/platform-compat.md": "6d84edd78e95bc129fcec5cd87784cda12ea5d071ed6389d0b6af0778d6f94ae",
