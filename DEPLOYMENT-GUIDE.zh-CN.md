@@ -190,6 +190,6 @@ $env:CODE_GUARD_HOOK_DIR = "D:\tasco\hooks"   # 指向本包 hooks/（压缩执�
 
 ## 8. 能力边界
 
-v0.7 默认启用 Shell 的失败诊断、成功终态、重复验证与统一仲裁，以及 Search Discovery/Filter 引导和任务驱动 Read 压缩。每条能力的正区、Native 边界和独立回滚开关见 [README.md](./README.md#当前能力边界按工具类型)。
+v0.7 默认启用 Shell 的失败诊断、成功终态、重复验证与统一仲裁，以及 Search Discovery/Filter 引导和任务驱动 Read 压缩。每条能力的正区与 Native 边界见 [README.md](./README.md#当前能力边界按工具类型)。
 
 未命中已验证规则的输出一律 Native（fail-open：任何异常都回退原生，不阻断 Agent）。压缩能力无外部 API 依赖：压缩模型由 Agent 内部路由，部署方无需配置第三方端点。完整性校验：`deploy_manifest.json` 记录全部 **124** 个 payload 文件 SHA256，目标机可离线校验包是否被改动。

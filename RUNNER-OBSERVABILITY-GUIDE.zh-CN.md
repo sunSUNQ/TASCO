@@ -147,15 +147,15 @@ Token 节省  : gross=5619 recovery=0 net=5619 mode=estimated_from_telemetry
 
 `-EnableTasco` 只表示接入 hooks，不代表所有输出都会被压缩。v0.7 的 Shell、Search 和 Read 默认能力与 Native 边界如下：
 
-| 能力 | 状态 | 自动压缩的任务 | 保持 Native 的任务 | 回滚开关 |
-| --- | --- | --- | --- | --- |
-| Diagnostic Semantic Compression | **AUTO（默认开）** | 高容量、低决策密度的单根因诊断输出 | 编辑、精确原文/断言恢复、全量枚举、多源归因、小输出 | — |
-| Failure Carrier → Diagnostic（④） | **AUTO（runner 默认）** | 真实测试/构建失败（`exit!=0`、test/build 命令形态）；原命令/exit code/stdout/stderr 保留 | 非 test/build 形态、shell 元字符、watch/交互、malformed carrier → legacy | `CODE_GUARD_FAILURE_CARRIER_AUTO=0` |
-| Terminal-State Success Compression（①） | **AUTO（runner 默认）** | `exit=0` + 完整 test/build summary + 未截断 | 失败、unknown、截断、普通 shell、不完整 reporter | `CODE_GUARD_TERMINAL_STATE=0` |
-| Validation Delta（③） | **AUTO（runner 默认）** | 同命令可比较的重复验证，只交付变化（含失败基线下的 resolution 模式） | 无 comparable previous、不可比 fingerprint | `CODE_GUARD_VALIDATION_DELTA=0` |
-| 精准代码搜索（⑤，Line-5） | **AUTO（runner 默认）** | DISCOVERY/FILTER 意图正区（调用链入口、wrapper→实现、依赖定位、symbol 消歧）跨仓注入搜索收敛引导 | LOOKUP（找定义）、枚举、统计、未知意图 → Native | `CODE_GUARD_SEARCH_GUIDANCE=0`（全关）/ `CODE_GUARD_SEARCH_GUIDANCE_AUTO=0`（回到白名单模式） |
-| 任务驱动 Read 压缩（⑥，Line-6） | **AUTO（runner 默认）** | 任务派生的读取：R1 目标符号提取（95%+）、R2 调用关系边、R3 实现链、R4 重复读抑制、R5 章节提取；全部 model-visible | 无法分类（R0）、无任务符号/map、无净节省、非入口文件读取、小读取 → Native | `CODE_GUARD_READ_COMPRESSION=0`（读全 Native）/ `CODE_GUARD_READ_MAP_AUTOBUILD=0`（关闭 map 按需生成，缺 map 仓 R2/R3 → Native） |
-| Structural / Search Result | Native / Shadow | —（边界已冻结，未达默认开启门槛） | 一切默认原生 | — |
+| 能力 | 状态 | 自动压缩的任务 | 保持 Native 的任务 |
+| --- | --- | --- | --- |
+| Diagnostic Semantic Compression | **AUTO（默认开）** | 高容量、低决策密度的单根因诊断输出 | 编辑、精确原文/断言恢复、全量枚举、多源归因、小输出 |
+| Failure Carrier → Diagnostic（④） | **AUTO（runner 默认）** | 真实测试/构建失败（`exit!=0`、test/build 命令形态）；原命令/exit code/stdout/stderr 保留 | 非 test/build 形态、shell 元字符、watch/交互、malformed carrier → legacy |
+| Terminal-State Success Compression（①） | **AUTO（runner 默认）** | `exit=0` + 完整 test/build summary + 未截断 | 失败、unknown、截断、普通 shell、不完整 reporter |
+| Validation Delta（③） | **AUTO（runner 默认）** | 同命令可比较的重复验证，只交付变化（含失败基线下的 resolution 模式） | 无 comparable previous、不可比 fingerprint |
+| 精准代码搜索（⑤，Line-5） | **AUTO（runner 默认）** | DISCOVERY/FILTER 意图正区（调用链入口、wrapper→实现、依赖定位、symbol 消歧）跨仓注入搜索收敛引导 | LOOKUP（找定义）、枚举、统计、未知意图 → Native |
+| 任务驱动 Read 压缩（⑥，Line-6） | **AUTO（runner 默认）** | 任务派生的读取：R1 目标符号提取（95%+）、R2 调用关系边、R3 实现链、R4 重复读抑制、R5 章节提取；全部 model-visible | 无法分类（R0）、无任务符号/map、无净节省、非入口文件读取、小读取 → Native |
+| Structural / Search Result | Native / Shadow | —（边界已冻结，未达默认开启门槛） | 一切默认原生 |
 
 统一仲裁（冻结 precedence）：**失败诊断 > 稳定 Validation Delta > 成功终态 > Native**
 ——一次输出只有一个 winner，`double_apply_count` 恒为 0；失败语义只看

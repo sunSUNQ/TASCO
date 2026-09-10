@@ -16,15 +16,15 @@
 
 ## 当前能力边界（按工具类型）
 
-| 工具类型 | v0.7 默认能力 | 已验证正区 | 负区 / 保持 Native | 回滚开关 |
-| --- | --- | --- | --- | --- |
-| Shell：失败输出 | Failure Carrier → Diagnostic Semantic Compression | 单一根因的高容量测试/构建失败、堆栈与诊断日志 | 编辑、精确断言/原文恢复、全量枚举、多源归因、小输出、unsafe/watch/交互 shell | `CODE_GUARD_FAILURE_CARRIER_AUTO=0` |
-| Shell：成功输出 | Terminal-State Success Compression | `exit=0`、完整且未截断的 test/build summary | 失败、unknown、截断、普通 shell、不完整 reporter | `CODE_GUARD_TERMINAL_STATE=0` |
-| Shell：重复验证 | Validation Delta | 同一可比较验证命令的重复执行；只交付变化 | 首次运行、无可比 fingerprint、失败 current、不可比较命令 | `CODE_GUARD_VALIDATION_DELTA=0` |
-| Shell：并发候选 | Unified Arbitration | 失败诊断 > 稳定 Validation Delta > 成功终态 > Native；一次输出一个 winner | 任意歧义或不满足证据门槛的候选 | 自动 Native |
-| Search | Discovery / Filter Guidance | 调用链入口、wrapper→实现、依赖定位、机制发现、同名 symbol 消歧 | LOOKUP（找定义）、枚举、统计、未知意图、大型复杂仓 → Native | `CODE_GUARD_SEARCH_GUIDANCE=0`；`CODE_GUARD_SEARCH_GUIDANCE_AUTO=0` 回到白名单 |
-| Read | Task-driven Read Compression | R1 目标符号提取、R2 调用关系边、R3 实现链、R4 重复读抑制、R5 文档章节提取 | R0 无法分类、无 task symbol/map、非入口文件、小读取、无净节省 | `CODE_GUARD_READ_COMPRESSION=0`；`CODE_GUARD_READ_MAP_AUTOBUILD=0` |
-| Search Result / Structural | Native / Shadow | 保留研究证据，尚未作为默认输出替换 | 所有生产请求 | 不适用 |
+| 工具类型 | v0.7 默认能力 | 已验证正区 | 负区 / 保持 Native |
+| --- | --- | --- | --- |
+| Shell：失败输出 | Failure Carrier → Diagnostic Semantic Compression | 单一根因的高容量测试/构建失败、堆栈与诊断日志 | 编辑、精确断言/原文恢复、全量枚举、多源归因、小输出、unsafe/watch/交互 shell |
+| Shell：成功输出 | Terminal-State Success Compression | `exit=0`、完整且未截断的 test/build summary | 失败、unknown、截断、普通 shell、不完整 reporter |
+| Shell：重复验证 | Validation Delta | 同一可比较验证命令的重复执行；只交付变化 | 首次运行、无可比 fingerprint、失败 current、不可比较命令 |
+| Shell：并发候选 | Unified Arbitration | 失败诊断 > 稳定 Validation Delta > 成功终态 > Native；一次输出一个 winner | 任意歧义或不满足证据门槛的候选 |
+| Search | Discovery / Filter Guidance | 调用链入口、wrapper→实现、依赖定位、机制发现、同名 symbol 消歧 | LOOKUP（找定义）、枚举、统计、未知意图、大型复杂仓 → Native |
+| Read | Task-driven Read Compression | R1 目标符号提取、R2 调用关系边、R3 实现链、R4 重复读抑制、R5 文档章节提取 | R0 无法分类、无 task symbol/map、非入口文件、小读取、无净节省 |
+| Search Result / Structural | Native / Shadow | 保留研究证据，尚未作为默认输出替换 | 所有生产请求 |
 
 所有能力均 fail-open：异常、低置信度或未命中正区时不阻断 Agent，而是原样交付。
 
