@@ -1,10 +1,9 @@
-# TASCO v0.5（tasco-v0.5-p1） Terminal-State Success Compression 示例
+# TASCO v0.7 Terminal-State Success Compression 示例
 
 一个零依赖、**离线、无模型**的确定性 policy / hook / boundary smoke：验证
 Terminal-State Success Compression 能在真实成功 test 输出上**触发压缩且保留合同**，并能观测。
 
-Terminal-State Success Compression 在 TASCO v0.5（tasco-v0.5-p1） 中为 **AUTO / DEFAULT ON**，
-并已达到 **RELEASE QUALIFIED / v0.5（tasco-v0.5-p1） RELEASE READY**。标准 Agent 会话使用：
+Terminal-State Success Compression 在 TASCO v0.7 中为 **AUTO / DEFAULT ON**。标准 Agent 会话使用：
 
 ```powershell
 .\deploy\run-tasco-task.ps1 -Agent claude -WorkDir <repo> -Prompt "..." -EnableTasco

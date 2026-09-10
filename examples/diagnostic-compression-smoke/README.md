@@ -1,6 +1,6 @@
-# TASCO v0.5（tasco-v0.5-p1） Diagnostic Semantic Compression 示例
+# TASCO v0.7 Diagnostic Semantic Compression 示例
 
-一个零依赖的小型演示项目，用于在装好 TASCO v0.5（tasco-v0.5-p1） 之后，验证默认自动开启的
+一个零依赖的小型演示项目，用于在装好 TASCO v0.7 之后，验证默认自动开启的
 **Diagnostic Semantic Compression** 正区。它只走已冻结的
 `diagnostic.semantic_compression` 能力：
 
@@ -17,7 +17,7 @@ Agent qualification。它不会开启 Structural。fixture 是确定性的：
 
 ## 前置条件
 
-- TASCO v0.5（tasco-v0.5-p1） 部署包（本目录所在的那一份即可）；
+- TASCO v0.7 部署包（本目录所在的那一份即可）；
 - Node.js（18+）；
 - Agent CLI 已登录，模型可访问（示例默认 CodeAgentCLI + `DeepSeek-v4-Flash-SZ`；Claude Code 则用 `-Agent claude -Model deepseek-v4-flash`）。
 

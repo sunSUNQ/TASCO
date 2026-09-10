@@ -1,6 +1,6 @@
-# TASCO Examples — 能力主线冒烟索引
+# TASCO v0.7 Examples — 能力主线冒烟索引
 
-每个 example 都是**离线确定性、零依赖、无模型**的冒烟：直接驱动真实 frozen
+每个 example 都是**离线确定性、零依赖、无模型**的 v0.7 冒烟：直接驱动真实 frozen
 runtime（bridge / policy hook / carrier shim），证据落在各自 `.tasco-runs/` 下。
 运行方式：进入目录后 `npm run smoke`（或 `node scripts/run_smoke.js`）。
 

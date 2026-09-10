@@ -1,6 +1,6 @@
-# TASCO v0.5：运行与观测指南
+# TASCO v0.7：运行与观测指南
 
-本文说明如何**跑一个 TASCO 任务**、**读取压缩结论**与**定位配置问题**，不改变任何压缩策略。默认行为是 Native：未命中已冻结正区的任务保持原生执行是预期结果，不是失败。当前版本（`tasco-v0.5-p1`）四条能力主线默认 AUTO（成功终态 / 失败诊断 / 重复验证 / 统一仲裁），各自可用环境变量显式回滚。
+本文说明如何**跑一个 TASCO 任务**、**读取压缩结论**与**定位配置问题**，不改变任何压缩策略。当前版本为 `tasco-v0.7`；Shell、Search 与 Read 的能力边界见 [README.md](./README.md)。默认行为仍是 Native：未命中正区不是失败。
 
 - 安装、环境要求、日常常驻接线与卸载 → [DEPLOYMENT-GUIDE.zh-CN.md](./DEPLOYMENT-GUIDE.zh-CN.md)
 - 产品总览与目录结构 → [README.md](./README.md)
@@ -8,7 +8,7 @@
 
 ## 冒烟验收（新机推荐顺序）
 
-拿到 `deploy/` 后，先跑一遍下面 4 步，确认压缩链路真实可用。**不需要安装 Python、不需要设置任何环境变量、不需要手动接线**——runner 会自动完成全部配置。
+拿到 TASCO 部署包后，先跑一遍下面 4 步，确认压缩链路真实可用。**不需要安装 Python、不需要设置任何环境变量、不需要手动接线**——runner 会自动完成全部配置。
 
 前置条件：
 1. Node.js 18+；
@@ -51,9 +51,9 @@
 | 任务 | runner 退出码 0，agent 答出 `component: payments-client / missing key: PAYMENTS_API_URL` |
 | 压缩发生 | 实时日志出现一次 `applied=diagnostic_semantic`；若某次调用显示 `applied=native fallback=...` 属正常（该输出不满足资格，保持原生） |
 | 结论 | 第 3 步输出 `效果: POSITIVE`，且 `net_saved_tokens_est > 0` |
-| 四线离线冒烟（推荐） | `examples\` 四个目录 `npm run smoke` 全部 `SMOKE PASS`（见下） |
+| 六线离线冒烟（推荐） | `examples\` 六个能力目录 `npm run smoke` 全部 `SMOKE PASS`（见下） |
 
-### 四条主线离线冒烟（推荐，无需模型）
+### 六条能力线离线冒烟（推荐，无需模型）
 
 随包自带四个离线确定性冒烟（几秒出结果，不需要 API/授权）：
 
@@ -63,13 +63,12 @@ cd D:\tasco\examples\arbitration-one-winner-smoke;      npm run smoke   # ② �
 cd D:\tasco\examples\validation-delta-smoke;            npm run smoke   # ③ 重复验证只报变化
 cd D:\tasco\examples\failure-carrier-smoke;             npm run smoke   # ④ 失败自动进诊断链
 cd D:\tasco\examples\precision-search-smoke;            npm run smoke   # ⑤ 精准代码搜索
+cd D:\tasco\examples\read-compression-smoke;             npm run smoke   # ⑥ 任务驱动 Read 压缩
 ```
 
-四个全部 `SMOKE PASS` 即四条主线链路真实可用；逐项断言与期望输出见
+六个全部 `SMOKE PASS` 即六条默认能力链路真实可用；逐项断言与期望输出见
 [examples/README.md](./examples/README.md) 与各目录内 README。
 
-> 五线冒烟：另含 `precision-search-smoke`（⑤ 精准代码搜索，跨仓意图门控引导），
-> 五个目录全部 `SMOKE PASS` 为完整基线。
 
 ### Agent 与模型参数
 
@@ -92,7 +91,7 @@ cd D:\tasco\examples\precision-search-smoke;            npm run smoke   # ⑤ �
 | `-EnableTasco` | 否 | 关 | 加上才接入 TASCO hooks；省略即原生对照。 |
 | `-CodeAgentCommand` / `-ClaudeCommand` / `-OpenCodeCommand` | 否 | 对应环境变量或自动发现 | CLI 不在 PATH 时传绝对路径；只传当前 `-Agent` 对应的一个。 |
 | `-OpenCodeModel` | 否 | `deepseek/deepseek-v4-flash` | 仅 OpenCode。 |
-| `-TascoVersion` | 否 | `tasco-v0.5-p1` | 仅写入 telemetry 的版本标签，不切换任何代码。通常不要设置。 |
+| `-TascoVersion` | 否 | `tasco-v0.7` | 仅写入 telemetry 的版本标签，不切换任何代码。通常不要设置。 |
 | `-PollMilliseconds` | 否 | `750` | 实时输出刷新间隔。通常保持默认。 |
 
 运行产物：`<项目>\.tasco-runs\<时间戳>\`（先看 `summary.json`，含 run 结论 + 内嵌压缩结论）。
@@ -140,14 +139,13 @@ Token 节省  : gross=5619 recovery=0 net=5619 mode=estimated_from_telemetry
 | `TASCO_E_WORKDIR_NOT_FOUND` | 参数 | 修正 `-WorkDir`。 |
 | `TASCO_E_AGENT_NOT_FOUND` | 本机环境 | 传对应 `-*Command` 绝对路径，或修正 `CODE_GUARD_*_CMD`。 |
 | `TASCO_E_NODE_NOT_FOUND` | 本机依赖 | 安装 Node.js 18+，重开终端。 |
-| `TASCO_E_DEPLOY_INCOMPLETE` | 部署 | 使用完整 `deploy/` 目录，不要单独复制脚本。 |
+| `TASCO_E_DEPLOY_INCOMPLETE` | 部署 | 使用完整 TASCO 部署包，不要单独复制脚本。 |
 | CLI / 模型返回鉴权、配额、网络错误 | 模型/服务 | 不是 TASCO 参数问题；检查 Agent CLI 登录、模型名、网关。细节在 `<run>\claude.stderr.log`。 |
 | Hook 在但始终 Native | 预期边界 | 小输出、编辑、精确文本、枚举类任务 Native 是设计行为，不要为提高触发率调整策略。 |
 
 ## 能力边界（哪些会压缩、哪些保持 Native）
 
-`-EnableTasco` 只表示接入 hooks，不代表所有输出都会被压缩。v0.6（`tasco-v0.7`）
-**五条主线默认 AUTO**，其余保持 Native/Shadow：
+`-EnableTasco` 只表示接入 hooks，不代表所有输出都会被压缩。v0.7 的 Shell、Search 和 Read 默认能力与 Native 边界如下：
 
 | 能力 | 状态 | 自动压缩的任务 | 保持 Native 的任务 | 回滚开关 |
 | --- | --- | --- | --- | --- |

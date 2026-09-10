@@ -1,8 +1,7 @@
-# TASCO v0.5：能力试验佐证
+# TASCO v0.7：能力试验佐证
 
-本文说明：**当前默认开启的四条能力主线凭什么发布**，以及**其余能力做过什么试验、
-为什么暂不开启**。数据来自研发线 `codex/new-machine-compat-baseline`（tag
-`tasco-v0.5-p1`），本包为结论摘要。
+本文说明 v0.7 当前默认能力的发布依据，以及未默认开启能力为何保持 Native / Shadow。
+总览按 Shell / Search / Read 分类见 [README.md](./README.md)；历史 `v0.5` 数据保留为证据，不代表当前发布版本。
 
 ## 0. 指标速读
 
@@ -15,7 +14,7 @@
 | model-visible delivery | 压缩结果**真实到达模型上下文**（stream tool_result 验证），不是 hook 侧自记账 |
 | 正区 / 负区 | 适合压缩的场景 / 绝不能压的场景；拿不准的一律 Native |
 
-## 1. 四条主线（全部默认 AUTO）的试验依据
+## 1. Shell 能力线（默认 AUTO）的试验依据
 
 一句话：**失败时只看根因，第一次成功只看结果，重复验证只看变化；多种机会同时
 出现时系统自动只选一种，不确定时保持原始结果。**
@@ -68,6 +67,14 @@
 | S4 跨仓在线 | express_src（DISCOVERY）：search 7→1、reads 13→10、turns 57→24、结论正确；sg4 消歧（FILTER）2 对：searches/reads 双降、结论正确；Native 对照臂零 guidance |
 | S5 Default-On | runner 注入 cell PASS；显式 `0` 全关 cell PASS |
 
+### ⑥ 任务驱动 Read 压缩（Line-6）
+
+| 已验证正区 | 保持 Native 的负区 |
+| --- | --- |
+| R1 目标符号提取、R2 调用关系边、R3 实现链、R4 未变化内容重复读、R5 文档章节提取 | R0 无法分类、缺 task symbol/map、非入口文件、小读取、无净节省；内容变化时必须 refresh |
+
+离线 smoke 直接驱动真实 runtime，验证交付 model-visible；R4 的安全合同是“宁可重发，也绝不抑制 stale 内容”。
+
 ## 2. 其余能力：做了什么、为什么暂不开启
 
 它们都做过真试验，共同卡点是**系统还无法自动可靠地认出"这次该不该管"**，默认不介入是保护而非否定。
@@ -82,8 +89,9 @@
 ## 3. 后续路径
 
 按"正区 → 自动开、负区 → 不碰、拿不准 → 不碰"逐子场景补齐资格后再默认开启。
-四条主线均可用环境变量显式回滚（`CODE_GUARD_TERMINAL_STATE` /
-`CODE_GUARD_VALIDATION_DELTA` / `CODE_GUARD_FAILURE_CARRIER_AUTO` = `0`），
+v0.7 各默认能力均可独立回滚（`CODE_GUARD_TERMINAL_STATE` /
+`CODE_GUARD_VALIDATION_DELTA` / `CODE_GUARD_FAILURE_CARRIER_AUTO` /
+`CODE_GUARD_SEARCH_GUIDANCE` / `CODE_GUARD_READ_COMPRESSION` = `0`），
 回滚只影响该能力，仲裁保证其余链路不受影响。离线验证入口见
 [examples/README.md](./examples/README.md)；完整证据链见研发仓
 `CURRENT_STATUS.md`、`docs/architecture/`（契约）与 `docs/experiments/`（报告）。
