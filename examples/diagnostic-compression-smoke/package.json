@@ -1,0 +1,9 @@
+{
+  "name": "tasco-diagnostic-compression-smoke",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Deterministic, dependency-free TASCO diagnostic compression smoke fixture.",
+  "scripts": {
+    "diagnostic": "node scripts/emit-diagnostic.js"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "tasco-arbitration-one-winner-smoke",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Deterministic, dependency-free TASCO arbitration smoke: one tool result, one winner, no double apply (offline, no model).",
+  "scripts": {
+    "smoke": "node scripts/run_smoke.js"
+  }
+}

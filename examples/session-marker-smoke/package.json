@@ -1,0 +1,9 @@
+{
+  "name": "session-marker-smoke",
+  "version": "0.7.0",
+  "private": true,
+  "description": "Minimal dashboard-integration kit: one real compression + start/end session markers, dashboard rows printed live (offline, no model).",
+  "scripts": {
+    "smoke": "node scripts/run_smoke.js"
+  }
+}

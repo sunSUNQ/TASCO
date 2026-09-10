@@ -1,0 +1,32 @@
+{
+  "capability": "search.discovery_guidance",
+  "releaseTier": "AUTO-STABLE",
+  "searchGuidanceAuto": true,
+  "pilotRepos": ["fastify"],
+  "scope": "generalized-auto ready — 意图正区跨仓生效（2026-09-08 Line-5 精准代码搜索 S2）；历史 pilot 收口见 2026-08-31（FD1-3 DISCOVERY v2 pilot 通过决策树 YES）",
+  "routerBoundary": {
+    "eligible": ["DISCOVERY", "FILTER"],
+    "native": [
+      "LOOKUP",
+      "STATISTICS",
+      "ENUMERATION",
+      "UNKNOWN",
+      "LARGE_REPO"
+    ],
+    "note": "boundary 锁死，不因 FD2 强结果扩大 eligibility（用户拍板）；Line-5 S2 仅移除仓库白名单依赖，意图边界不变"
+  },
+  "runtime": {
+    "masterSwitch": "CODE_GUARD_SEARCH_GUIDANCE=1",
+    "generalizedAuto": "CODE_GUARD_SEARCH_GUIDANCE_AUTO=1（意图正区跨仓 AUTO，仓库不再参与 eligibility）",
+    "pilotAllowlist": "CODE_GUARD_SEARCH_GUIDANCE_PILOTS=fastify（未设 AUTO 时生效，向后兼容）",
+    "perManifest": "searchGuidanceAuto=true + pilotRepo=fastify（runner SBVR 守卫 + bridge 白名单复核）"
+  },
+  "rollback": {
+    "trigger": [
+      "success regression（guidance success < native）",
+      "recovery / re-search 系统性出现",
+      "多个任务 turns + tokens 同时系统性反向（>= +5%）"
+    ],
+    "action": "AUTO-STABLE -> SHADOW；不再修改 Search 策略救数据（FD1-3 = release boundary，非调参起点）"
+  }
+}

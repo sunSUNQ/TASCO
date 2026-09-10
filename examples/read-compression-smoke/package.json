@@ -1,0 +1,9 @@
+{
+  "name": "read-compression-smoke",
+  "version": "0.6.0",
+  "private": true,
+  "description": "Line-6 task-driven read compression offline smoke (real frozen bridge, no model)",
+  "scripts": {
+    "smoke": "node scripts/run_smoke.js"
+  }
+}

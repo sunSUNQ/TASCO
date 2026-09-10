@@ -1,0 +1,8 @@
+module imports (direct):
+web.js → checkout.js
+checkout.js → payment-gateway.js
+payment-gateway.js → payments-core.js
+orders.js → payments-core.js
+reports.js → orders.js
+notifications.js → (none)
+util_*.js → (none)

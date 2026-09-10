@@ -1,0 +1,4 @@
+# deploy 闭包哈希可复现性：强制 LF 行尾。
+# deploy_manifest.json 的 SHA256 基于本目录文件的确定性字节计算；
+# 无论 core.autocrlf 如何设置，所有机器 checkout 均为 LF，保证完整性校验可复现。
+* text eol=lf

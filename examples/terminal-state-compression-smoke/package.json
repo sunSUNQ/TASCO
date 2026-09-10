@@ -1,0 +1,9 @@
+{
+  "name": "tasco-terminal-state-compression-smoke",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Deterministic, dependency-free TASCO Terminal-State Success Compression smoke fixture (offline, no model).",
+  "scripts": {
+    "smoke": "node scripts/run_smoke.js"
+  }
+}

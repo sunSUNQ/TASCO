@@ -1,0 +1,9 @@
+{
+  "name": "tasco-validation-delta-smoke",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Deterministic, dependency-free TASCO Validation Delta smoke: repeated validation reports only what changed (offline, no model).",
+  "scripts": {
+    "smoke": "node scripts/run_smoke.js"
+  }
+}

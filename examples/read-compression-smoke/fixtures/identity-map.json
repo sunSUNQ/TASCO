@@ -1,0 +1,28 @@
+{
+  "schema": "structural-moduledeps-identity-v2",
+  "nodes": [
+    {
+      "source_path": "lib/route.js",
+      "source_basename": "route.js",
+      "targets": [
+        { "target_path": "lib/handle-request.js", "target_basename": "handle-request.js" },
+        { "target_path": "lib/validation.js", "target_basename": "validation.js" },
+        { "target_path": "lib/error-handler.js", "target_basename": "error-handler.js" }
+      ]
+    },
+    {
+      "source_path": "lib/handle-request.js",
+      "source_basename": "handle-request.js",
+      "targets": [
+        { "target_path": "lib/validation.js", "target_basename": "validation.js" }
+      ]
+    },
+    {
+      "source_path": "lib/error-handler.js",
+      "source_basename": "error-handler.js",
+      "targets": [
+        { "target_path": "lib/error-status.js", "target_basename": "error-status.js" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Guard Workflow"
+  short_description: "Low-noise repository analysis, editing, and validation"
+  default_prompt: "Use $code-guard-workflow to inspect and modify this repository with bounded evidence and minimal noisy blocking."

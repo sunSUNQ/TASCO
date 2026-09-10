@@ -1,0 +1,39 @@
+{
+  // OpenCode V1 (Windows 原生) 示例配置。
+  // 复制到项目根目录的 opencode.json(或与已有配置合并)。
+  "$schema": "https://opencode.ai/config.json",
+
+  // 环境契约:Windows/PowerShell + helper 目录(core 版,所有任务需要)。
+  // BROAD/TARGETED 任务的工作流引导由插件按任务等级动态注入,
+  // 避免 SIMPLE 任务被完整治理流程引导导致 workflow inflation。
+  "instructions": [".opencode/instructions/windows-native-core.md"],
+
+  "permission": {
+    // 基础读取/搜索放行(治理 hook 仍会拦截宽泛搜索与整文件读取)。
+    "read": "allow",
+    "grep": "allow",
+    "glob": "allow",
+    "skill": "allow",
+
+    // 写操作与子代理默认询问;治理 hook 通过后再由你确认。
+    "edit": "ask",
+    "task": "ask",
+
+    "webfetch": "ask",
+    "websearch": "ask",
+    "external_directory": "ask",
+
+    // bash:默认询问;放行 RTK 重写后的 rtk <cmd> 与常用只读 git 命令。
+    "bash": {
+      "*": "ask",
+      "rtk*": "allow",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "git show*": "allow",
+      "git branch*": "allow",
+      "git rev-parse*": "allow",
+      "git remote*": "allow"
+    }
+  }
+}

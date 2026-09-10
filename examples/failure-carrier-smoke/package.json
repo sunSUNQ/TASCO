@@ -1,0 +1,9 @@
+{
+  "name": "tasco-failure-carrier-smoke",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Deterministic, dependency-free TASCO P1 failure carrier smoke: auto PreToolUse wrap -> real failure -> Diagnostic compression, single execution (offline, no model).",
+  "scripts": {
+    "smoke": "node scripts/run_smoke.js"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "tasco-precision-search-smoke",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Deterministic, dependency-free TASCO precision-code-search smoke: intent-gated guidance across repos, negative FP=0, pilot compat, rollback (offline, no model).",
+  "scripts": {
+    "smoke": "node scripts/run_smoke.js"
+  }
+}

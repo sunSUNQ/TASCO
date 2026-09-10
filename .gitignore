@@ -1,0 +1,22 @@
+# Runtime state and per-session evidence
+.tasco-runs/
+.code-guard/
+.claude/
+hook_runtime/
+hook_archives/
+
+# Local dependencies and language caches
+node_modules/
+__pycache__/
+*.py[cod]
+
+# Local configuration and credentials
+.env
+.env.*
+*.pem
+*.pfx
+*.key
+
+# Generated archives and logs
+*.tar
+*.log
