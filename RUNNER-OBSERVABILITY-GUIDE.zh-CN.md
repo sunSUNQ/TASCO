@@ -12,18 +12,17 @@
 
 前置条件：
 1. Node.js 18+；
-2. Agent CLI 已登录（本指南默认示例为 CodeAgentCLI + 显式模型；换 Claude Code / OpenCode 见下文「Agent 与模型参数」）；
-3. **CodeAgentCLI 需先授权目标目录**：首次使用某目录前，在该目录内交互启动一次 `codeagentcli` 并允许“访问此目录”（runner 后台启动 CLI，授权询问无法弹出；详见 [README.md](./README.md)「使用前提」）。
+2. Claude Code CLI 已登录（本指南所有命令统一使用 Claude Code）；
 
 ```powershell
 # 1) 只读预检：检查本机依赖（错误带 TASCO_E_* 代码与修复建议）
 & D:\tasco\tools\test-tasco-preflight.ps1 `
   -WorkDir D:\tasco\examples\diagnostic-compression-smoke `
-  -Agent codeagent -Model "DeepSeek-v4-Flash-SZ"
+  -Agent claude -Model "deepseek-v4-flash"
 
 # 2) 冒烟：让 Agent 分析一段模拟故障日志（零依赖确定性 fixture）
 & D:\tasco\run-tasco-task.ps1 `
-  -Agent codeagent -Model "DeepSeek-v4-Flash-SZ" `
+  -Agent claude -Model "deepseek-v4-flash" `
   -WorkDir D:\tasco\examples\diagnostic-compression-smoke `
   -Prompt "Run node scripts/emit-diagnostic.js exactly once. Diagnose the root cause of the simulated checkout outage from that output. State the failing component, the missing configuration key, and the safe next step. Do not modify files and do not run tests." `
   -EnableTasco
@@ -74,22 +73,22 @@ cd D:\tasco\examples\read-compression-smoke;             npm run smoke   # ⑥ �
 
 | 场景 | runner / preflight 参数 | 说明 |
 | --- | --- | --- |
-| **CodeAgentCLI（本指南示例默认）** | `-Agent codeagent -Model "DeepSeek-v4-Flash-SZ"` | 模型名**必须显式提供**（`-Model` 或环境变量 `CODE_GUARD_INTERNAL_MODEL`），否则报 `TASCO_E_MODEL_REQUIRED`。CLI 自动发现：`CODE_GUARD_CODEAGENT_CMD` → `CODE_GUARD_CLAUDE_CMD` → `codeagentcli`（PATH）。 |
+| **Claude Code（本指南示例默认）** | `-Agent claude -Model deepseek-v4-flash` | CLI 自动发现 `CODE_GUARD_CLAUDE_CMD` 或 PATH 中的 `claude`。 |
 | Claude Code | `-Agent claude -Model deepseek-v4-flash` | 也可省略两个参数——代码默认即 `claude` + `deepseek-v4-flash`。CLI 自动发现 npm 全局安装。 |
 | OpenCode | `-Agent opencode -OpenCodeModel "deepseek/deepseek-v4-flash"` | 模型名用 `provider/model` 格式，由 opencode 自身 auth 提供。 |
 
-注意：preflight 用统一的 `-AgentCommand` 指定 CLI 绝对路径；runner 对应为 `-CodeAgentCommand` / `-ClaudeCommand` / `-OpenCodeCommand`（CLI 不在 PATH 时才需要）。三份指南示例统一默认 CodeAgentCLI；你的目标机若是其它 Agent，把上表对应参数替换进第 1、2 步命令即可。
+注意：preflight 用统一的 `-AgentCommand` 指定 CLI 绝对路径；runner 使用 `-ClaudeCommand`（CLI 不在 PATH 时才需要）。
 
 ## run-tasco-task.ps1 参数
 
 | 参数 | 必填 | 默认 | 含义 |
 | --- | --- | --- | --- |
 | `-Prompt` | **是** | — | 交给 Agent 的任务文本。验收/压测建议只读、单根因诊断任务。 |
-| `-Agent` | 否* | `claude` | `claude` / `codeagent` / `opencode`。*CodeAgentCLI 场景**建议显式传 `codeagent`**（本文示例默认）；代码默认仍是 `claude`。 |
-| `-Model` | 否* | `CODE_GUARD_CLAUDE_MODEL` → `deepseek-v4-flash` | Claude/CodeAgent 模型名。*`-Agent codeagent` 时**必须传**（或用 `CODE_GUARD_INTERNAL_MODEL`），否则报 `TASCO_E_MODEL_REQUIRED`。 |
+| `-Agent` | 否 | `claude` | 本指南统一使用 `claude`。 |
+| `-Model` | 否 | `CODE_GUARD_CLAUDE_MODEL` → `deepseek-v4-flash` | Claude Code 模型名。 |
 | `-WorkDir` | 否 | 当前目录 | 目标项目根目录。 |
 | `-EnableTasco` | 否 | 关 | 加上才接入 TASCO hooks；省略即原生对照。 |
-| `-CodeAgentCommand` / `-ClaudeCommand` / `-OpenCodeCommand` | 否 | 对应环境变量或自动发现 | CLI 不在 PATH 时传绝对路径；只传当前 `-Agent` 对应的一个。 |
+| `-ClaudeCommand` | 否 | 环境变量或自动发现 | Claude CLI 不在 PATH 时传绝对路径。 |
 | `-OpenCodeModel` | 否 | `deepseek/deepseek-v4-flash` | 仅 OpenCode。 |
 | `-TascoVersion` | 否 | `tasco-v0.7` | 仅写入 telemetry 的版本标签，不切换任何代码。通常不要设置。 |
 | `-PollMilliseconds` | 否 | `750` | 实时输出刷新间隔。通常保持默认。 |
@@ -128,7 +127,7 @@ Token 节省  : gross=5619 recovery=0 net=5619 mode=estimated_from_telemetry
 | `TASCO_E_RUNS_ROOT_NOT_FOUND` | 目录下没有 `.tasco-runs` | 先跑一次 `run-tasco-task.ps1 -EnableTasco`，或把 `-Path` 指到跑过任务的项目。 |
 | `TASCO_E_NO_SESSIONS` | 有 `.tasco-runs` 但没有完成的 run | 任务结束后再查。 |
 | `TASCO_E_SUMMARY_NOT_FOUND` | 最近 run 还没有 summary.json | 任务可能仍在运行。 |
-| `TASCO_E_MODEL_REQUIRED` | codeagent 没给模型名 | 加 `-Model "DeepSeek-v4-Flash-SZ"`。 |
+| `TASCO_E_MODEL_REQUIRED` | Claude Code 未提供模型名 | 加 `-Model "deepseek-v4-flash"`。 |
 
 高级工具（保留给实时观察与旧自动化）：`watch-tasco-session.ps1 -RunDir <run目录> -Follow` 实时 follow；`summarize-tasco-sessions.ps1 -RunsRoot <...>` 基础汇总。
 

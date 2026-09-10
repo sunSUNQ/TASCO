@@ -14,7 +14,7 @@ TASCO 只在已验证正区介入；Shell、Search、Read 的正区与负区总�
 | --- | --- | --- |
 | Windows | Windows 10/11 或等价 Server | 本包按 Windows 交付 |
 | Node.js | 18 或更高（推荐 24） | 运行 bridge 与 hook，JS 只用 Node 内置模块 |
-| Agent CLI | CodeAgentCLI / Claude Code CLI / OpenCode CLI 任一，已登录 | 本指南示例默认 CodeAgentCLI |
+| Agent CLI | Claude Code CLI（已登录） | 本指南示例统一使用 Claude Code |
 
 **不需要**：Python、`pip install`、任何环境变量、手动改 Agent 配置——`run-tasco-task.ps1` 会自动完成全部配置（见第 2 节）。Git 与研发仓也不是部署前提。
 
@@ -24,21 +24,15 @@ TASCO 只在已验证正区介入；Shell、Search、Read 的正区与负区总�
 
 把整个 TASCO 仓库复制或克隆到目标机固定位置（本文以 `D:\tasco` 为例；实际放哪都行，只需把后续命令里的路径替换掉）。**不要改动包内文件**，也不要只复制其中某几个子目录。
 
-> **CodeAgentCLI 先授权目录（使用 CodeAgentCLI 的前提）**：runner 在后台非交互启动 CLI，目录授权询问无法弹出，未授权目录会导致任务直接失败。放包后先执行一次：
+> Claude Code 首次使用前，请确认 CLI 已登录（`claude auth status`）。
 >
-> ```powershell
-> cd D:\tasco\examples\diagnostic-compression-smoke
-> codeagentcli      # 交互模式启动；出现“允许访问此目录”询问时选允许，然后退出
-> ```
->
-> 每个新项目目录第一次使用前都要做一次。换 Claude Code（`-Agent claude`）无此步骤。
 
 ### 第 2 步：只读预检
 
 ```powershell
 & D:\tasco\tools\test-tasco-preflight.ps1 `
   -WorkDir D:\tasco\examples\diagnostic-compression-smoke `
-  -Agent codeagent -Model "DeepSeek-v4-Flash-SZ"
+  -Agent claude -Model "deepseek-v4-flash"
 ```
 
 看到 `TASCO preflight PASS` 即通过；错误会带 `TASCO_E_*` 代码与修复建议。
@@ -49,7 +43,7 @@ TASCO 只在已验证正区介入；Shell、Search、Read 的正区与负区总�
 
 ```powershell
 & D:\tasco\run-tasco-task.ps1 `
-  -Agent codeagent -Model "DeepSeek-v4-Flash-SZ" `
+  -Agent claude -Model "deepseek-v4-flash" `
   -WorkDir D:\tasco\examples\diagnostic-compression-smoke `
   -Prompt "Run node scripts/emit-diagnostic.js exactly once. Diagnose the root cause of the simulated checkout outage from that output. State the failing component, the missing configuration key, and the safe next step. Do not modify files and do not run tests." `
   -EnableTasco
@@ -138,7 +132,7 @@ $env:CODE_GUARD_HOOK_DIR = "D:\tasco\hooks"   # 指向本包 hooks/（压缩执�
 
 ### 4.2 把 hook 写进 Agent settings
 
-**CodeAgentCLI** 读项目根 `.cac\settings.json`；**Claude Code** 读 `.claude\settings.json`（同构 schema，仅目录名不同）。二选一，不要两个都配。内容：
+**Claude Code** 读项目根 `.claude\settings.local.json`。内容：
 
 ```json
 {
@@ -155,7 +149,7 @@ $env:CODE_GUARD_HOOK_DIR = "D:\tasco\hooks"   # 指向本包 hooks/（压缩执�
 
 保存后新开终端验证：跑一个产生大诊断输出的任务，然后在 `<项目>\.code-guard\hook_invoked.jsonl` 看到调用记录即接线成功。
 
-> 全局（所有项目生效）：把同样的内容放到用户级 `C:\Users\<你>\.claude\settings.json`（CodeAgentCLI 为 `\.cac\`）。已有 `settings.local.json` 的项目不要用 runner 再跑（runner 拒绝覆盖已有本地配置）。
+> 全局（所有项目生效）：把同样的内容放到用户级 `C:\Users\<你>\.claude\settings.json`。已有 `settings.local.json` 的项目不要用 runner 再跑（runner 拒绝覆盖已有本地配置）。
 > **OpenCode** 不走 hooks schema：把 `plugin\governance.js` 复制到项目 `.opencode\plugins\`，再设 `CODE_GUARD_DEPLOY_ROOT=D:\tasco` 即可；runner 的 `-Agent opencode` 会自动完成。
 
 ## 5. 环境变量参考（默认都不需要设置）
@@ -167,8 +161,7 @@ $env:CODE_GUARD_HOOK_DIR = "D:\tasco\hooks"   # 指向本包 hooks/（压缩执�
 | `CODE_GUARD_HOOK_DIR` | 常驻接线**必需** | 指向本包 `hooks/` |
 | `CODE_GUARD_AGENT_RUNTIME` | 基本不用 | 自动检测 `claude-code` / `opencode` |
 | `CODE_GUARD_BASE_DIR` | 想改状态/归档位置时 | 默认 `<项目>\.code-guard`；runner 模式自动用 run 目录 |
-| `CODE_GUARD_CODEAGENT_CMD` / `CODE_GUARD_CLAUDE_CMD` / `CODE_GUARD_OPENCODE_CMD` | CLI 不在 PATH 时 | Agent 可执行文件绝对路径 |
-| `CODE_GUARD_INTERNAL_MODEL` | 常驻 codeagent 不想每次传模型名 | 同 `-Model` 的作用 |
+| `CODE_GUARD_CLAUDE_CMD` | Claude CLI 不在 PATH 时 | Claude 可执行文件绝对路径 |
 | `CODE_GUARD_OPENCODE_MODEL` | OpenCode 换模型 | 默认 `deepseek/deepseek-v4-flash` |
 | `CODE_GUARD_RLM_ENABLED` / `GEMINI_HOOK_PYTHON` / `RLM_*` | **不需要** | 历史 RLM 压缩路径变量；默认体验（Diagnostic）走本地压缩，不依赖 Python/RLM |
 
@@ -180,9 +173,9 @@ $env:CODE_GUARD_HOOK_DIR = "D:\tasco\hooks"   # 指向本包 hooks/（压缩执�
 
 | 现象 | 优先检查 |
 | --- | --- |
-| 报 `TASCO_E_MODEL_REQUIRED` | codeagent 必须带 `-Model "DeepSeek-v4-Flash-SZ"`（或设 `CODE_GUARD_INTERNAL_MODEL`）。 |
-| 任务一开始就失败，或日志提示需要目录授权/允许访问 | CodeAgentCLI 未对该目录授权：先按「验收流程 第 1 步」后的说明，在该目录交互启动一次 `codeagentcli` 并允许访问。 |
-| 报 `TASCO_E_AGENT_NOT_FOUND` | Agent CLI 不在 PATH：传 `-CodeAgentCommand <exe路径>`（或对应 `-*Command`）。 |
+| 报 `TASCO_E_MODEL_REQUIRED` | Claude Code 示例使用 `-Model "deepseek-v4-flash"`。 |
+| Claude CLI 未登录 | 执行 `claude auth status`，按 Claude Code 的登录流程完成授权。 |
+| 报 `TASCO_E_AGENT_NOT_FOUND` | Claude CLI 不在 PATH：传 `-ClaudeCommand <exe路径>`。 |
 | 观测脚本报 `TASCO_E_RUNS_ROOT_NOT_FOUND` | 还没跑过任务或 `-Path` 指错；先跑一次 `run-tasco-task.ps1 -EnableTasco`。 |
 | 一直 Native（没有压缩） | 输出是否够大、是否只读单根因诊断？小输出/编辑/枚举类任务 Native 是预期行为，不是故障。 |
 | PowerShell 禁止运行脚本 | 用 `powershell -NoProfile -ExecutionPolicy Bypass -File 脚本路径` 执行。 |

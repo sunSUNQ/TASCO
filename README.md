@@ -30,7 +30,7 @@
 
 ## Quick Start
 
-以下以 `D:\tasco` 为例。CodeAgentCLI 首次使用某个目录前，先在该目录交互运行一次 `codeagentcli` 并确认目录授权；Claude Code 与 OpenCode 不需要此授权步骤。
+以下以 `D:\tasco` 为例，使用已登录的 Claude Code CLI。
 
 ```powershell
 # 1. 获取并进入部署包
@@ -39,11 +39,11 @@ git clone https://github.com/sunSUNQ/TASCO.git D:\tasco
 # 2. 只读预检
 & D:\tasco\tools\test-tasco-preflight.ps1 `
   -WorkDir D:\tasco\examples\diagnostic-compression-smoke `
-  -Agent codeagent -Model "DeepSeek-v4-Flash-SZ"
+  -Agent claude -Model "deepseek-v4-flash"
 
 # 3. 运行一次真实 Agent 诊断任务，并启用 TASCO
 & D:\tasco\run-tasco-task.ps1 `
-  -Agent codeagent -Model "DeepSeek-v4-Flash-SZ" `
+  -Agent claude -Model "deepseek-v4-flash" `
   -WorkDir D:\tasco\examples\diagnostic-compression-smoke `
   -Prompt "Run node scripts/emit-diagnostic.js exactly once. Diagnose the root cause. Do not modify files." `
   -EnableTasco
