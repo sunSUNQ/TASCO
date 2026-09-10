@@ -45,11 +45,39 @@ if ($Agent -eq "claude" -and -not $Model) { $Model = "deepseek-v4-flash" }
 $agentCommand = if ($Agent -eq "codeagent") { $CodeAgentCommand } elseif ($Agent -eq "opencode") { $OpenCodeCommand } else { $ClaudeCommand }
 if ($Agent -eq "claude" -and $agentCommand -eq "claude") {
   $candidates = @(
+    (Join-Path $env:APPDATA "npm\claude.cmd"),
+    (Join-Path $env:APPDATA "npm\claude.ps1"),
     (Join-Path $env:APPDATA "npm\node_modules\@anthropic-ai\claude-code\bin\claude.exe"),
     (Join-Path $env:USERPROFILE ".local\bin\claude.exe")
   )
   $agentCommand = $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
   if (-not $agentCommand) { throw "[TASCO_E_AGENT_NOT_FOUND] Claude Code executable not found.`n建议: 传 -ClaudeCommand <path-to-claude.exe> 或设置 CODE_GUARD_CLAUDE_CMD。" }
+}
+
+# npm/global installs expose different launch shims across Claude Code versions
+# and PowerShell versions. Normalize each entry point to a real process plus
+# arguments so Start-Process never tries to execute a .ps1/.cmd as an .exe.
+function Resolve-CommandPath([string]$Command) {
+  if (-not $Command) { return $null }
+  if (Test-Path -LiteralPath $Command -PathType Leaf) { return (Resolve-Path -LiteralPath $Command).Path }
+  $resolved = Get-Command $Command -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($resolved -and $resolved.Source) { return $resolved.Source }
+  return $Command
+}
+
+function Get-ProcessLaunch([string]$Command, [string[]]$CliArgs) {
+  $path = Resolve-CommandPath $Command
+  $ext = [System.IO.Path]::GetExtension($path).ToLowerInvariant()
+  if ($ext -in @(".cmd", ".bat")) {
+    $line = 'call "' + $path.Replace('"', '""') + '" ' + ($CliArgs -join " ")
+    return @{ FilePath = $env:ComSpec; ArgumentList = "/d /s /c `"$line`"" }
+  }
+  if ($ext -eq ".ps1") {
+    $pwsh = (Get-Command pwsh -ErrorAction SilentlyContinue | Select-Object -First 1).Source
+    if (-not $pwsh) { $pwsh = (Get-Command powershell -ErrorAction Stop | Select-Object -First 1).Source }
+    return @{ FilePath = $pwsh; ArgumentList = "-NoProfile -ExecutionPolicy Bypass -File `"$path`" " + ($CliArgs -join " ") }
+  }
+  return @{ FilePath = $path; ArgumentList = ($CliArgs -join " ") }
 }
 
 function Quote-Arg([string]$Value) { '"' + $Value.Replace('"', '\"') + '"' }
@@ -182,7 +210,8 @@ try {
     $effectiveModel = if ($Agent -eq "codeagent") { $env:CODE_GUARD_INTERNAL_MODEL } else { $Model }
     if ($effectiveModel) { $args += @("--model", (Quote-Arg $effectiveModel)) }
   }
-  $process = Start-Process -FilePath $agentCommand -ArgumentList ($args -join " ") -WorkingDirectory $workRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdoutFile -RedirectStandardError $stderrFile
+  $launch = Get-ProcessLaunch $agentCommand $args
+  $process = Start-Process -FilePath $launch.FilePath -ArgumentList $launch.ArgumentList -WorkingDirectory $workRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdoutFile -RedirectStandardError $stderrFile
   if ($exitCodeNative) { try { $rawProcessHandle = [TascorunExitCode]::OpenProcess(0x1000, $false, $process.Id) } catch {} }
   Write-Host "[tasco] agent=$Agent run=$runDir enabled=$EnableTasco pid=$($process.Id)"
   $stdoutOffset = 0L; $hookOffset = 0L; $eventOffset = 0L; $usage = @{}; $turns = 0
