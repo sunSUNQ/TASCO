@@ -23,6 +23,7 @@
 "use strict";
 
 const { classifyCommand, detectTerminalState } = require("./terminal_state");
+const { validationIdentity } = require("./validation_identity");
 
 const MAX_FAILED_NAMES_KEPT = 500; // fingerprint 上限（防御性 cap）
 const MAX_FAILED_NAMES_LISTED = 20; // delta 文本中逐名列出上限，超出显式 +M more
@@ -136,13 +137,17 @@ function extractCounts(text) {
 }
 
 // ---------------------------------------------------------------- fingerprint
-function buildFingerprint({ command, text, at }) {
+function buildFingerprint({ command, text, at, cwd }) {
   // Line-7 C 阶段：fingerprint 变 kind-aware（test/build/check 三类验证命令
   // 均可比较）。test 类保持 v1 语义逐字节不变（ok 仍要求 counts 完整）；
   // build/check 类为 state-level 可比（静默/summary 成功也算可比基线）。
   const kind = classifyCommand(command) || "test";
   const state = detectTerminalState(String(text || ""), kind);
   if (state === "unknown") return null; // truncated / 无终态 → 不可比
+  // Line-8A（M-V3）：fingerprint 携带 semantic validation identity（vkey）。
+  // vkey 仅在 identity 解析成功时存在；解析失败（compound / 未知 wrapper /
+  // 变异参数等）→ null，比较层回退 raw foldCommand 恒等（不缩小已冻结行为）。
+  const ident = validationIdentity(command, cwd);
   const counts = extractCounts(text);
   const cases = parseCases(text);
   const failedNames = cases.filter((c) => c.state === "fail").map((c) => c.name);
@@ -154,6 +159,7 @@ function buildFingerprint({ command, text, at }) {
     kind,
     state,
     command: foldCommand(command),
+    vkey: ident ? ident.key : null,
     at: String(at || new Date().toISOString()),
     counts: counts || { pass: 0, fail: 0, skip: 0, todo: 0 },
     caseCount: cases.length,
@@ -162,8 +168,16 @@ function buildFingerprint({ command, text, at }) {
   };
 }
 
-function sameCommand(previous, command) {
-  return previous && previous.command === foldCommand(command);
+function sameCommand(previous, command, cwd) {
+  if (!previous) return false;
+  // Line-8A（M-V3）：semantic validation identity 优先——双方 vkey 成立且
+  // 相等 → 语义相同（可比性仍由 evidence gate 独立把守）。任一侧无 identity
+  // → 回退 raw foldCommand 恒等（legacy 行为逐字节保持）。
+  if (previous.vkey) {
+    const ident = validationIdentity(command, cwd);
+    if (ident) return previous.vkey === ident.key;
+  }
+  return previous.command === foldCommand(command);
 }
 
 // ---------------------------------------------------------------- delta
@@ -190,11 +204,11 @@ function countsLine(counts) {
  *     failure_to_success_resolution）；counts_changed 仍为 test-only
  *     （build/check 无可靠 counts parser 前，不做计数级比较）。
  */
-function tryCompressValidationDelta({ command, text, previous }) {
+function tryCompressValidationDelta({ command, text, previous, cwd }) {
   const kind = classifyCommand(command);
   if (!kind) return null; // 非验证命令 → Native（v1 边界保持）
   if (detectTerminalState(String(text || ""), kind) !== "success") return null; // success-current 域
-  if (!sameCommand(previous, command)) return null; // 无可比较前轮（C6 → terminal 现状）
+  if (!sameCommand(previous, command, cwd)) return null; // 无可比较前轮（C6 → terminal 现状）
   if (!previous || !previous.ok) return null; // 前轮不可比 → 不伪造
 
   const raw = String(text || "");

@@ -1,6 +1,6 @@
-# TASCO v0.7 Diagnostic Semantic Compression 示例
+# TASCO v0.5（tasco-v0.5-p1） Diagnostic Semantic Compression 示例
 
-一个零依赖的小型演示项目，用于在装好 TASCO v0.7 之后，验证默认自动开启的
+一个零依赖的小型演示项目，用于在装好 TASCO v0.5（tasco-v0.5-p1） 之后，验证默认自动开启的
 **Diagnostic Semantic Compression** 正区。它只走已冻结的
 `diagnostic.semantic_compression` 能力：
 
@@ -17,9 +17,9 @@ Agent qualification。它不会开启 Structural。fixture 是确定性的：
 
 ## 前置条件
 
-- TASCO v0.7 部署包（本目录所在的那一份即可）；
+- TASCO v0.5（tasco-v0.5-p1） 部署包（本目录所在的那一份即可）；
 - Node.js（18+）；
-- Claude Code CLI 已登录，模型可访问（本示例使用 `-Agent claude -Model deepseek-v4-flash`）。
+- Agent CLI 已登录，模型可访问（示例默认 CodeAgentCLI + `DeepSeek-v4-Flash-SZ`；Claude Code 则用 `-Agent claude -Model deepseek-v4-flash`）。
 
 不要在已经有 `.claude/settings.local.json` 的项目里运行：runner 会拒绝覆盖已有的本地 hook 配置。
 
@@ -27,7 +27,7 @@ Agent qualification。它不会开启 Structural。fixture 是确定性的：
 
 ```powershell
 & D:\tasco\run-tasco-task.ps1 `
-  -Agent claude -Model "deepseek-v4-flash" `
+  -Agent codeagent -Model "DeepSeek-v4-Flash-SZ" `
   -WorkDir D:\tasco\examples\diagnostic-compression-smoke `
   -Prompt "Run node scripts/emit-diagnostic.js exactly once. Diagnose the root cause of the simulated checkout outage from that output. State the failing component, the missing configuration key, and the safe next step. Do not modify files and do not run tests." `
   -EnableTasco
@@ -35,7 +35,7 @@ Agent qualification。它不会开启 Structural。fixture 是确定性的：
 
 - `-Prompt` 是唯一必填参数；`-EnableTasco` 不加则完全不接入 TASCO hooks（等于裸跑对照），验证压缩时**必须加**。
 - Diagnostic Semantic Compression 在标准 TASCO runner 的 `-EnableTasco` 会话中默认自动开启；本样例不需要额外的 Diagnostic 开关。
-- Claude Code 场景可省略两个参数（代码默认 `claude` + `deepseek-v4-flash`）。
+- CodeAgentCLI 必须显式给 `-Model`；Claude Code 场景两个参数都可省略（代码默认 `claude` + `deepseek-v4-flash`）。
 - 完整 runner 参数说明见 [RUNNER-OBSERVABILITY-GUIDE.zh-CN.md](../../RUNNER-OBSERVABILITY-GUIDE.zh-CN.md)。
 
 预期任务结论：

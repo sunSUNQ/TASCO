@@ -1,6 +1,6 @@
-# TASCO v0.7：运行与观测指南
+# TASCO v0.5：运行与观测指南
 
-本文说明如何**跑一个 TASCO 任务**、**读取压缩结论**与**定位配置问题**，不改变任何压缩策略。当前版本为 `tasco-v0.7`；Shell、Search 与 Read 的能力边界见 [README.md](./README.md)。默认行为仍是 Native：未命中正区不是失败。
+本文说明如何**跑一个 TASCO 任务**、**读取压缩结论**与**定位配置问题**，不改变任何压缩策略。默认行为是 Native：未命中已冻结正区的任务保持原生执行是预期结果，不是失败。当前版本（`tasco-v0.5-p1`）四条能力主线默认 AUTO（成功终态 / 失败诊断 / 重复验证 / 统一仲裁），各自可用环境变量显式回滚。
 
 - 安装、环境要求、日常常驻接线与卸载 → [DEPLOYMENT-GUIDE.zh-CN.md](./DEPLOYMENT-GUIDE.zh-CN.md)
 - 产品总览与目录结构 → [README.md](./README.md)
@@ -8,21 +8,22 @@
 
 ## 冒烟验收（新机推荐顺序）
 
-拿到 TASCO 部署包后，先跑一遍下面 4 步，确认压缩链路真实可用。**不需要安装 Python、不需要设置任何环境变量、不需要手动接线**——runner 会自动完成全部配置。
+拿到 `deploy/` 后，先跑一遍下面 4 步，确认压缩链路真实可用。**不需要安装 Python、不需要设置任何环境变量、不需要手动接线**——runner 会自动完成全部配置。
 
 前置条件：
 1. Node.js 18+；
-2. Claude Code CLI 已登录（本指南所有命令统一使用 Claude Code）；
+2. Agent CLI 已登录（本指南默认示例为 CodeAgentCLI + 显式模型；换 Claude Code / OpenCode 见下文「Agent 与模型参数」）；
+3. **CodeAgentCLI 需先授权目标目录**：首次使用某目录前，在该目录内交互启动一次 `codeagentcli` 并允许“访问此目录”（runner 后台启动 CLI，授权询问无法弹出；详见 [README.md](./README.md)「使用前提」）。
 
 ```powershell
 # 1) 只读预检：检查本机依赖（错误带 TASCO_E_* 代码与修复建议）
 & D:\tasco\tools\test-tasco-preflight.ps1 `
   -WorkDir D:\tasco\examples\diagnostic-compression-smoke `
-  -Agent claude -Model "deepseek-v4-flash"
+  -Agent codeagent -Model "DeepSeek-v4-Flash-SZ"
 
 # 2) 冒烟：让 Agent 分析一段模拟故障日志（零依赖确定性 fixture）
 & D:\tasco\run-tasco-task.ps1 `
-  -Agent claude -Model "deepseek-v4-flash" `
+  -Agent codeagent -Model "DeepSeek-v4-Flash-SZ" `
   -WorkDir D:\tasco\examples\diagnostic-compression-smoke `
   -Prompt "Run node scripts/emit-diagnostic.js exactly once. Diagnose the root cause of the simulated checkout outage from that output. State the failing component, the missing configuration key, and the safe next step. Do not modify files and do not run tests." `
   -EnableTasco
@@ -50,9 +51,9 @@
 | 任务 | runner 退出码 0，agent 答出 `component: payments-client / missing key: PAYMENTS_API_URL` |
 | 压缩发生 | 实时日志出现一次 `applied=diagnostic_semantic`；若某次调用显示 `applied=native fallback=...` 属正常（该输出不满足资格，保持原生） |
 | 结论 | 第 3 步输出 `效果: POSITIVE`，且 `net_saved_tokens_est > 0` |
-| 六线离线冒烟（推荐） | `examples\` 六个能力目录 `npm run smoke` 全部 `SMOKE PASS`（见下） |
+| 四线离线冒烟（推荐） | `examples\` 四个目录 `npm run smoke` 全部 `SMOKE PASS`（见下） |
 
-### 六条能力线离线冒烟（推荐，无需模型）
+### 四条主线离线冒烟（推荐，无需模型）
 
 随包自带四个离线确定性冒烟（几秒出结果，不需要 API/授权）：
 
@@ -62,35 +63,36 @@ cd D:\tasco\examples\arbitration-one-winner-smoke;      npm run smoke   # ② �
 cd D:\tasco\examples\validation-delta-smoke;            npm run smoke   # ③ 重复验证只报变化
 cd D:\tasco\examples\failure-carrier-smoke;             npm run smoke   # ④ 失败自动进诊断链
 cd D:\tasco\examples\precision-search-smoke;            npm run smoke   # ⑤ 精准代码搜索
-cd D:\tasco\examples\read-compression-smoke;             npm run smoke   # ⑥ 任务驱动 Read 压缩
 ```
 
-六个全部 `SMOKE PASS` 即六条默认能力链路真实可用；逐项断言与期望输出见
+四个全部 `SMOKE PASS` 即四条主线链路真实可用；逐项断言与期望输出见
 [examples/README.md](./examples/README.md) 与各目录内 README。
 
+> 五线冒烟：另含 `precision-search-smoke`（⑤ 精准代码搜索，跨仓意图门控引导），
+> 五个目录全部 `SMOKE PASS` 为完整基线。
 
 ### Agent 与模型参数
 
 | 场景 | runner / preflight 参数 | 说明 |
 | --- | --- | --- |
-| **Claude Code（本指南示例默认）** | `-Agent claude -Model deepseek-v4-flash` | CLI 自动发现 `CODE_GUARD_CLAUDE_CMD` 或 PATH 中的 `claude`。 |
+| **CodeAgentCLI（本指南示例默认）** | `-Agent codeagent -Model "DeepSeek-v4-Flash-SZ"` | 模型名**必须显式提供**（`-Model` 或环境变量 `CODE_GUARD_INTERNAL_MODEL`），否则报 `TASCO_E_MODEL_REQUIRED`。CLI 自动发现：`CODE_GUARD_CODEAGENT_CMD` → `CODE_GUARD_CLAUDE_CMD` → `codeagentcli`（PATH）。 |
 | Claude Code | `-Agent claude -Model deepseek-v4-flash` | 也可省略两个参数——代码默认即 `claude` + `deepseek-v4-flash`。CLI 自动发现 npm 全局安装。 |
 | OpenCode | `-Agent opencode -OpenCodeModel "deepseek/deepseek-v4-flash"` | 模型名用 `provider/model` 格式，由 opencode 自身 auth 提供。 |
 
-注意：preflight 用统一的 `-AgentCommand` 指定 CLI 绝对路径；runner 使用 `-ClaudeCommand`（CLI 不在 PATH 时才需要）。
+注意：preflight 用统一的 `-AgentCommand` 指定 CLI 绝对路径；runner 对应为 `-CodeAgentCommand` / `-ClaudeCommand` / `-OpenCodeCommand`（CLI 不在 PATH 时才需要）。三份指南示例统一默认 CodeAgentCLI；你的目标机若是其它 Agent，把上表对应参数替换进第 1、2 步命令即可。
 
 ## run-tasco-task.ps1 参数
 
 | 参数 | 必填 | 默认 | 含义 |
 | --- | --- | --- | --- |
 | `-Prompt` | **是** | — | 交给 Agent 的任务文本。验收/压测建议只读、单根因诊断任务。 |
-| `-Agent` | 否 | `claude` | 本指南统一使用 `claude`。 |
-| `-Model` | 否 | `CODE_GUARD_CLAUDE_MODEL` → `deepseek-v4-flash` | Claude Code 模型名。 |
+| `-Agent` | 否* | `claude` | `claude` / `codeagent` / `opencode`。*CodeAgentCLI 场景**建议显式传 `codeagent`**（本文示例默认）；代码默认仍是 `claude`。 |
+| `-Model` | 否* | `CODE_GUARD_CLAUDE_MODEL` → `deepseek-v4-flash` | Claude/CodeAgent 模型名。*`-Agent codeagent` 时**必须传**（或用 `CODE_GUARD_INTERNAL_MODEL`），否则报 `TASCO_E_MODEL_REQUIRED`。 |
 | `-WorkDir` | 否 | 当前目录 | 目标项目根目录。 |
 | `-EnableTasco` | 否 | 关 | 加上才接入 TASCO hooks；省略即原生对照。 |
-| `-ClaudeCommand` | 否 | 环境变量或自动发现 | Claude CLI 不在 PATH 时传绝对路径。 |
+| `-CodeAgentCommand` / `-ClaudeCommand` / `-OpenCodeCommand` | 否 | 对应环境变量或自动发现 | CLI 不在 PATH 时传绝对路径；只传当前 `-Agent` 对应的一个。 |
 | `-OpenCodeModel` | 否 | `deepseek/deepseek-v4-flash` | 仅 OpenCode。 |
-| `-TascoVersion` | 否 | `tasco-v0.7` | 仅写入 telemetry 的版本标签，不切换任何代码。通常不要设置。 |
+| `-TascoVersion` | 否 | `tasco-v0.5-p1` | 仅写入 telemetry 的版本标签，不切换任何代码。通常不要设置。 |
 | `-PollMilliseconds` | 否 | `750` | 实时输出刷新间隔。通常保持默认。 |
 
 运行产物：`<项目>\.tasco-runs\<时间戳>\`（先看 `summary.json`，含 run 结论 + 内嵌压缩结论）。
@@ -127,7 +129,7 @@ Token 节省  : gross=5619 recovery=0 net=5619 mode=estimated_from_telemetry
 | `TASCO_E_RUNS_ROOT_NOT_FOUND` | 目录下没有 `.tasco-runs` | 先跑一次 `run-tasco-task.ps1 -EnableTasco`，或把 `-Path` 指到跑过任务的项目。 |
 | `TASCO_E_NO_SESSIONS` | 有 `.tasco-runs` 但没有完成的 run | 任务结束后再查。 |
 | `TASCO_E_SUMMARY_NOT_FOUND` | 最近 run 还没有 summary.json | 任务可能仍在运行。 |
-| `TASCO_E_MODEL_REQUIRED` | Claude Code 未提供模型名 | 加 `-Model "deepseek-v4-flash"`。 |
+| `TASCO_E_MODEL_REQUIRED` | codeagent 没给模型名 | 加 `-Model "DeepSeek-v4-Flash-SZ"`。 |
 
 高级工具（保留给实时观察与旧自动化）：`watch-tasco-session.ps1 -RunDir <run目录> -Follow` 实时 follow；`summarize-tasco-sessions.ps1 -RunsRoot <...>` 基础汇总。
 
@@ -138,23 +140,24 @@ Token 节省  : gross=5619 recovery=0 net=5619 mode=estimated_from_telemetry
 | `TASCO_E_WORKDIR_NOT_FOUND` | 参数 | 修正 `-WorkDir`。 |
 | `TASCO_E_AGENT_NOT_FOUND` | 本机环境 | 传对应 `-*Command` 绝对路径，或修正 `CODE_GUARD_*_CMD`。 |
 | `TASCO_E_NODE_NOT_FOUND` | 本机依赖 | 安装 Node.js 18+，重开终端。 |
-| `TASCO_E_DEPLOY_INCOMPLETE` | 部署 | 使用完整 TASCO 部署包，不要单独复制脚本。 |
+| `TASCO_E_DEPLOY_INCOMPLETE` | 部署 | 使用完整 `deploy/` 目录，不要单独复制脚本。 |
 | CLI / 模型返回鉴权、配额、网络错误 | 模型/服务 | 不是 TASCO 参数问题；检查 Agent CLI 登录、模型名、网关。细节在 `<run>\claude.stderr.log`。 |
 | Hook 在但始终 Native | 预期边界 | 小输出、编辑、精确文本、枚举类任务 Native 是设计行为，不要为提高触发率调整策略。 |
 
 ## 能力边界（哪些会压缩、哪些保持 Native）
 
-`-EnableTasco` 只表示接入 hooks，不代表所有输出都会被压缩。v0.7 的 Shell、Search 和 Read 默认能力与 Native 边界如下：
+`-EnableTasco` 只表示接入 hooks，不代表所有输出都会被压缩。v0.6（`tasco-v0.7`）
+**五条主线默认 AUTO**，其余保持 Native/Shadow：
 
-| 能力 | 状态 | 自动压缩的任务 | 保持 Native 的任务 |
-| --- | --- | --- | --- |
-| Diagnostic Semantic Compression | **AUTO（默认开）** | 高容量、低决策密度的单根因诊断输出 | 编辑、精确原文/断言恢复、全量枚举、多源归因、小输出 |
-| Failure Carrier → Diagnostic（④） | **AUTO（runner 默认）** | 真实测试/构建失败（`exit!=0`、test/build 命令形态）；原命令/exit code/stdout/stderr 保留 | 非 test/build 形态、shell 元字符、watch/交互、malformed carrier → legacy |
-| Terminal-State Success Compression（①） | **AUTO（runner 默认）** | `exit=0` + 完整 test/build summary + 未截断 | 失败、unknown、截断、普通 shell、不完整 reporter |
-| Validation Delta（③） | **AUTO（runner 默认）** | 同命令可比较的重复验证，只交付变化（含失败基线下的 resolution 模式） | 无 comparable previous、不可比 fingerprint |
-| 精准代码搜索（⑤，Line-5） | **AUTO（runner 默认）** | DISCOVERY/FILTER 意图正区（调用链入口、wrapper→实现、依赖定位、symbol 消歧）跨仓注入搜索收敛引导 | LOOKUP（找定义）、枚举、统计、未知意图 → Native |
-| 任务驱动 Read 压缩（⑥，Line-6） | **AUTO（runner 默认）** | 任务派生的读取：R1 目标符号提取（95%+）、R2 调用关系边、R3 实现链、R4 重复读抑制、R5 章节提取；全部 model-visible | 无法分类（R0）、无任务符号/map、无净节省、非入口文件读取、小读取 → Native |
-| Structural / Search Result | Native / Shadow | —（边界已冻结，未达默认开启门槛） | 一切默认原生 |
+| 能力 | 状态 | 自动压缩的任务 | 保持 Native 的任务 | 回滚开关 |
+| --- | --- | --- | --- | --- |
+| Diagnostic Semantic Compression | **AUTO（默认开）** | 高容量、低决策密度的单根因诊断输出 | 编辑、精确原文/断言恢复、全量枚举、多源归因、小输出 | — |
+| Failure Carrier → Diagnostic（④） | **AUTO（runner 默认）** | 真实测试/构建失败（`exit!=0`、test/build 命令形态）；原命令/exit code/stdout/stderr 保留 | 非 test/build 形态、shell 元字符、watch/交互、malformed carrier → legacy | `CODE_GUARD_FAILURE_CARRIER_AUTO=0` |
+| Terminal-State Success Compression（①） | **AUTO（runner 默认）** | `exit=0` + 完整 test/build summary + 未截断 | 失败、unknown、截断、普通 shell、不完整 reporter | `CODE_GUARD_TERMINAL_STATE=0` |
+| Validation Delta（③） | **AUTO（runner 默认）** | 同命令可比较的重复验证，只交付变化（含失败基线下的 resolution 模式） | 无 comparable previous、不可比 fingerprint | `CODE_GUARD_VALIDATION_DELTA=0` |
+| 精准代码搜索（⑤，Line-5） | **AUTO（runner 默认）** | DISCOVERY/FILTER 意图正区（调用链入口、wrapper→实现、依赖定位、symbol 消歧）跨仓注入搜索收敛引导 | LOOKUP（找定义）、枚举、统计、未知意图 → Native | `CODE_GUARD_SEARCH_GUIDANCE=0`（全关）/ `CODE_GUARD_SEARCH_GUIDANCE_AUTO=0`（回到白名单模式） |
+| 任务驱动 Read 压缩（⑥，Line-6） | **AUTO（runner 默认）** | 任务派生的读取：R1 目标符号提取（95%+）、R2 调用关系边、R3 实现链、R4 重复读抑制、R5 章节提取；全部 model-visible | 无法分类（R0）、无任务符号/map、无净节省、非入口文件读取、小读取 → Native | `CODE_GUARD_READ_COMPRESSION=0`（读全 Native）/ `CODE_GUARD_READ_MAP_AUTOBUILD=0`（关闭 map 按需生成，缺 map 仓 R2/R3 → Native） |
+| Structural / Search Result | Native / Shadow | —（边界已冻结，未达默认开启门槛） | 一切默认原生 | — |
 
 统一仲裁（冻结 precedence）：**失败诊断 > 稳定 Validation Delta > 成功终态 > Native**
 ——一次输出只有一个 winner，`double_apply_count` 恒为 0；失败语义只看

@@ -28,6 +28,7 @@ const {
   parseFailureCarrier,
   isDiagnosticEligibleFailureCarrier,
 } = require("../hooks/post_tool/failure_carrier");
+const { validationIdentity } = require("../hooks/post_tool/validation_identity");
 const {
   isAutoCarrierEligible,
   buildCarrierRewrite,
@@ -75,8 +76,9 @@ function extractText(response) {
   }
   // Claude Code Read（旧形状）: { type, file }（file 为内容文本）
   if (typeof response.file === "string") return response.file;
-  // Claude Code Glob: { filenames, ... }
-  if (Array.isArray(response.filenames)) return response.filenames.join("\n");
+  // Claude Code Glob: { filenames, ... }（空 filenames 不提前返回——Grep
+  // content 模式的 filenames 也是空数组，content 才是文本载体，B3-b 修复）
+  if (Array.isArray(response.filenames) && response.filenames.length) return response.filenames.join("\n");
   // Claude Code Bash: { stdout, stderr, ... }
   if (typeof response.stdout === "string") {
     return [response.stdout, response.stderr].filter(Boolean).join("\n");
@@ -168,13 +170,30 @@ function validationStateFile(sessionId) {
 // Fingerprint state is keyed by the folded command (one recent run per
 // command): alternating test commands under one session never clobber each
 // other's baseline. File shape v2: { v: 2, runs: { [foldedCommand]: fp } }.
-function loadValidationState(sessionId, command) {
+// Line-8A (M-V3): exact folded-key lookup first (legacy behavior unchanged);
+// on a miss, a semantic scan finds the most recent fingerprint whose
+// validation identity (vkey) equals the current command's — command-form
+// drift (`npm run build` vs `npm run build | tail -60`) no longer hides the
+// comparable baseline. Fingerprints without a vkey (legacy records) are
+// invisible to the scan (fail-closed; raw equality still applies).
+function loadValidationState(sessionId, command, cwd) {
   try {
     const parsed = JSON.parse(fs.readFileSync(validationStateFile(sessionId), "utf8"));
     if (!parsed || typeof parsed !== "object") return null;
     if (parsed.v !== 2) return null; // legacy single-slot shape: not comparable
+    const runs = parsed.runs || {};
     const key = foldCommand(command);
-    return parsed.runs && parsed.runs[key] ? parsed.runs[key] : null;
+    if (runs[key]) return runs[key];
+    const ident = validationIdentity(command, cwd);
+    if (!ident) return null;
+    let best = null;
+    for (const k of Object.keys(runs)) {
+      const fp = runs[k];
+      if (fp && fp.vkey && fp.vkey === ident.key) {
+        if (!best || String(fp.at || "") > String(best.at || "")) best = fp;
+      }
+    }
+    return best;
   } catch (_e) {
     return null;
   }
@@ -522,10 +541,10 @@ function handlePostToolUse(event) {
   let vdResult = null;
   let vdHasPrevious = false;
   if (vdAuto && isTestShell) {
-    const previous = loadValidationState(sessionId, vdCommand);
-    vdHasPrevious = Boolean(sameCommand(previous, vdCommand));
-    vdResult = tryCompressValidationDelta({ command: vdCommand, text, previous: vdHasPrevious ? previous : null });
-    const fp = buildFingerprint({ command: vdCommand, text });
+    const previous = loadValidationState(sessionId, vdCommand, cwd);
+    vdHasPrevious = Boolean(sameCommand(previous, vdCommand, cwd));
+    vdResult = tryCompressValidationDelta({ command: vdCommand, text, previous: vdHasPrevious ? previous : null, cwd });
+    const fp = buildFingerprint({ command: vdCommand, text, cwd });
     if (fp) saveValidationState(sessionId, vdCommand, fp);
   }
   const arbitration = arbitrate({
@@ -783,6 +802,84 @@ function handlePostToolUse(event) {
       deliveredText: text,
     });
     appendArbitration(null, "read_delivery_fallback", readArb);
+    return {};
+  }
+
+  // Search Compression bridge leg（CODE_GUARD_STRUCTURED_SEARCH=1，B3-b）。
+  // grep_search 工具输出转发给冻结 policy hook 的 structured grep leg
+  // （v1.0 schema：按 file 聚类、保留 production exact match、domain 计数）。
+  // 采纳唯一硬校验：delivered < raw（无净节省不采纳，fail-closed）+ 冻结
+  // schema marker。flag 未设 → 逐字节 legacy（grep 事件此前为 Native）。
+  const structuredSearch = process.env.CODE_GUARD_STRUCTURED_SEARCH === "1";
+  if (
+    structuredSearch &&
+    payload.tool_name === "grep_search" &&
+    arbitration.selected_capability !== "diagnostic_semantic"
+  ) {
+    const scRun = (() => {
+      try {
+        return runUnifiedAfter(
+          hookInput,
+          { tool_response: text },
+          { directory: cwd },
+          {
+            hookDir: process.env.CODE_GUARD_HOOK_DIR,
+            agent: AGENT_CLAUDE_CODE,
+            env: { CODE_GUARD_STRUCTURED_SEARCH: "1" },
+          }
+        );
+      } catch (_e) {
+        return null; // fail-open
+      }
+    })();
+    const scUpdated =
+      scRun && scRun.hookSpecificOutput && scRun.hookSpecificOutput.updatedToolOutput;
+    const scDelivered = extractText(scUpdated);
+    const adoptedSc =
+      scDelivered &&
+      scDelivered.length < text.length &&
+      scDelivered.includes("[SEARCH STRUCTURED v1]")
+        ? scDelivered
+        : null;
+    const scArb = arbitrate({
+      candidates: [
+        {
+          id: "search_compression",
+          eligible: Boolean(adoptedSc),
+          reason: adoptedSc
+            ? "structured_search_delivery"
+            : "structured_search_declined",
+          evidence: null,
+        },
+      ],
+      fallbackReason: "no_eligible_capability",
+    });
+    if (adoptedSc) {
+      appendEvent({
+        type: "compression",
+        sessionId,
+        toolName: obs.tool,
+        tool_family: obs.family,
+        capability: "search_compression",
+        originalLength: text.length,
+        compressedLength: adoptedSc.length,
+        ratio: text.length ? adoptedSc.length / text.length : null,
+        tokenReduction: text.length ? 1 - adoptedSc.length / text.length : null,
+        coverage: null,
+        confidence: null,
+        rescued: false,
+        transport_replacement_emitted: true,
+        at: new Date().toISOString(),
+      });
+      appendArbitration("search_compression", null, scArb);
+      return deliveredEnvelope(response, adoptedSc);
+    }
+    createClaudeNativeObservability().recordNative({
+      event,
+      canonicalToolName: payload.tool_name,
+      deliveredText: text,
+    });
+    appendArbitration(null, "search_delivery_fallback", scArb);
     return {};
   }
 

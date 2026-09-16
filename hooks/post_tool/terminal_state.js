@@ -418,4 +418,7 @@ module.exports = {
   detectTerminalState,
   compressSuccessOutput,
   tryCompressSuccessTerminal,
+  // Line-8A（M-V3）：validation_identity 复用同一冻结变异/watch 负区表
+  // （单一事实源；纯 additive 导出，零行为变更）。
+  CHECK_MUTATION_RE,
 };

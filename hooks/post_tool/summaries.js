@@ -515,6 +515,19 @@ function structuredGrepSummary(toolName, text) {
       currentFile = String(fileMatch[1]).trim();
       continue;
     }
+    // v1.0a parser-format adaptation (B3-b): real agent Grep tool results are
+    // rg-style `path:line:content` lines without "File:" headers. Capture the
+    // leading relative path so per-file clustering and domain classification
+    // work on real tool output. Frozen v1.0 schema bytes unchanged.
+    const pathPrefixed = line.match(/^([^\s:][^:]*?):(\d+)[:：]\s*(.*)$/);
+    if (pathPrefixed && !currentFile) {
+      const hit = pathPrefixed[3] || "";
+      const key0 = `${pathPrefixed[1]}:${pathPrefixed[2]}:${hit}`;
+      if (!unique.has(key0) && unique.size < 120) {
+        unique.set(key0, { file: pathPrefixed[1], line: pathPrefixed[2], content: String(hit).slice(0, 120) });
+      }
+      continue;
+    }
     const hitMatch =
       line.match(/(?:L|line\s*)(\d+)[:：]\s*(.*)$/i) ||
       line.match(/:(\d+):\s*(.*)$/);

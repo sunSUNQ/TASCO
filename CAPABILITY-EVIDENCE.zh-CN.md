@@ -1,20 +1,34 @@
-# TASCO v0.7：能力试验佐证
+# TASCO v0.8-rc2：能力试验佐证
 
-本文说明 v0.7 当前默认能力的发布依据，以及未默认开启能力为何保持 Native / Shadow。
-总览按 Shell / Search / Read 分类见 [README.md](./README.md)；历史 `v0.5` 数据保留为证据，不代表当前发布版本。
+本文说明：**当前默认开启的能力线凭什么发布**，以及**其余能力做过什么试验、
+为什么保持关闭**。数据来自研发线冻结收口（Existing-Line Evidence Closure：
+7/7 evidence lines resolved，registry 948 runs，F0=0）；本包为结论摘要。
 
-## 0. 指标速读
+## 0. v0.8-rc2 收口摘要（B1–B4 战役冻结口径）
+
+| 能力线 | 关键数据（冻结口径） | 状态 |
+| --- | --- | --- |
+| Large Diagnostic | 36/36 controlled（3 仓 3/3/3），tasco 18/18 applied + model-visible；macro median saving 91.9%（IQR 79.6–93.0，range 71.8–94.6）；safety 4/4；oracle echo 不对称已文档 | CLOSED |
+| Failure Carrier | 36/36 controlled；macro median 82.6%（47.5–91.9）；single execution；safety 5/5 reject 全对；wrong_capability=0 | CLOSED |
+| Terminal-State | Lab 43/43（96.09% pooled）+ A/B 18/18 + Online 3,752 chars model-visible；冲突 suite 按冻结 precedence 让位 failure diagnostic / stable VD | CLOSED |
+| Validation Delta | Online unchanged 6,299→130、failure→success resolution 可达；M-V3 语义身份 FP=0；自然工作流 repeat 机会 1/6（opportunity-limited，诚实边界，非能力失败） | CLOSED-BOUNDED |
+| Search Guidance | 30/30（含 sd1 anchor）：tasco 注入 12/12、native 0/12、task_success 24/24；safety 2/2 零误注入 | CLOSED |
+| Search Result Compression | 24/24 controlled，tasco 压缩命中 9/12（3 collapse = 设计内 native）；15 次 compressed greps macro median 92.7%（IQR 80.5–96.2）；default-off 4/4 fail-closed | CLOSED（default OFF） |
+| Read R1–R5 | R4 suppress median 96.5%（27 次交付）/ R3 94.5% / R5 58.7%；R2 关系边 15/15；R4 safety 24/24 零 wrong_suppression；tinyhttp 机会域边界定格（R2/R3 map 依赖） | CLOSED ×5 |
+| Structural Context | G1 静态资格门不可满足证明；所有场景 Native passthrough；Type-B 重复中等证据的结构替代 LCR 0.74 | frozen Native |
+
+## 1. 指标速读
 
 | 指标 | 含义 |
 | --- | --- |
-| success `30/30 vs 30/30` | 不压缩 30 个任务全对、压缩后 30 个也全对 = **压缩没让任务变差** |
+| success `N/N vs N/N` | 不压缩 N 个任务全对、压缩后 N 个也全对 = **压缩没让任务变差** |
 | LCR（性价比） | 压缩花的成本 ÷ 省下的收益。**<1 才划算**：0.550 = 花 0.55 买到 1，净赚 45% |
 | WIR（闯祸次数） | 压缩改错信息导致 Agent 走错路的次数。**0 = 一次没闯祸**，安全底线 |
 | wrong_capability / double_apply | 压错能力 / 同一输出重复交付的次数。**恒为 0**（统一仲裁 + 单次交付） |
 | model-visible delivery | 压缩结果**真实到达模型上下文**（stream tool_result 验证），不是 hook 侧自记账 |
 | 正区 / 负区 | 适合压缩的场景 / 绝不能压的场景；拿不准的一律 Native |
 
-## 1. Shell 能力线（默认 AUTO）的试验依据
+## 2. 四条任务输出主线（默认 AUTO）的定级试验依据（v0.5 时期冻结，历史记录）
 
 一句话：**失败时只看根因，第一次成功只看结果，重复验证只看变化；多种机会同时
 出现时系统自动只选一种，不确定时保持原始结果。**
@@ -44,6 +58,7 @@
 | Online Qualification | 真实 runner：unchanged 8,908→130 chars，model-visible（`[VALIDATION_DELTA]` 真实 stream 可见） |
 | v0.5 Online | BC cell 重复成功 6,299→130 chars；failure→success resolution 模式经 Failure Carrier 在线首次可达（237 chars） |
 | 回归 | flag OFF 逐字节回滚（无 delta、无 fingerprint 状态文件） |
+| v0.8 补强 | M-V3 语义身份（cd-compound 等价重验识别）FP=0；B4 自然机会资格化：1/6 两段式工作流形成 repeat，decline 于 evidence gate 为设计内 fail-closed → honest CLOSED-BOUNDED |
 
 ### ④ Failure Carrier 失败诊断自动处理（P1）
 
@@ -54,44 +69,42 @@
 | Carrier-Aware Eligibility（S2a） | 4 种 prompt 措辞同 eligibility；malformed/exit=0/缺字段 → Native；C1–C10 10/10 |
 | Auto Carrier（S2b） | F1–F8 8/8：真实失败 → 改写 → 恰一次执行 → carrier → Diagnostic；single execution（side-effect 对账）；success 透传、unsafe 不改写 |
 | Online Runner | 真实失败 7,478→681 chars（model-visible、root cause 保留、agent 修复正确）；single execution；wrong_capability=0 |
-| M3 保护 | 首次成功 Terminal / 重复成功 VD 链路不被破坏（Online BC 14/14） |
+| v0.8 收口（B1-c） | 36/36 controlled（3 仓 3/3/3）；macro median 82.6%；safety 5/5 边界 reject 全对 |
 
-### ⑤ 精准代码搜索（Search Discovery Guidance 泛化，Line-5）
+### ⑤ Large Diagnostic 大型诊断压缩（v0.8 升格默认 AUTO）
 
 | 试验 | 结果 |
 | --- | --- |
-| 历史 pilot | Fastify DISCOVERY v2（FD2 turns −40% / tokens −36%）；sd5b 3+3 复现（turns −15% / tokens −17% / search −50%）；LOOKUP 负区 canary emission=0 |
-| S1 历史正区复核 | 当前 runtime 下正区 15/15 发射、负区 16/16 抑制（FP=0）、wrong_intent=0 |
-| S2 跨仓 eligibility | 仓库白名单移除（`CODE_GUARD_SEARCH_GUIDANCE_AUTO`）；同 prompt 四仓发射逐字节一致；pilot 模式向后兼容 |
-| S3 安全 Gate | 负区 FP=0、wrong_strategy=0（确定性 corpus 冻结为回归）、suppressed 零注入 |
-| S4 跨仓在线 | express_src（DISCOVERY）：search 7→1、reads 13→10、turns 57→24、结论正确；sg4 消歧（FILTER）2 对：searches/reads 双降、结论正确；Native 对照臂零 guidance |
-| S5 Default-On | runner 注入 cell PASS；显式 `0` 全关 cell PASS |
+| B2-a 批次 | 36/36 controlled（3 仓 3/3/3）：tasco 18/18 applied + emitted + model-visible；native 18/18 显式 capability_disabled raw |
+| Macro saving | median 91.9%（IQR 79.6–93.0，range 71.8–94.6） |
+| 安全边界 | smalloput/capoff/carrieroff 零压缩行；persistence wall 实证位于 25,000B–43KB → band 上限 25,000 |
+| 归因 | F0=0；oracle echo 不对称（native 原始窗口噪声主导）已文档，direction consistent |
 
-### ⑥ 任务驱动 Read 压缩（Line-6）
+## 3. Read / Search 两族（v0.6–v0.8 逐步默认化）
 
-| 已验证正区 | 保持 Native 的负区 |
+| 能力线 | 定级试验 |
 | --- | --- |
-| R1 目标符号提取、R2 调用关系边、R3 实现链、R4 未变化内容重复读、R5 文档章节提取 | R0 无法分类、缺 task symbol/map、非入口文件、小读取、无净节省；内容变化时必须 refresh |
+| Read R1–R5（v0.6 默认 AUTO） | 五子策略 primitive qualification 全 PASS；R1–R5 各自 A/B 正区 + 3×3 stability；B2 批次收口：R2 15/15 / R3 36/36 / R4 78/78（suppress 27 次 median 96.5%）/ R5 78/78（median 58.7%）；tinyhttp 机会域边界定格（R2/R3 map 依赖，诚实排除） |
+| Search Guidance（v0.5–v0.7 默认 AUTO） | S1 历史正区复核 15/15、负区 FP=0；S2 跨仓 eligibility；S4 跨仓在线 express search 7→1 / turns 57→24；B3-a 收口 30/30（tasco 注入 12/12、native 0/12）；safety 2/2 零误注入 |
+| Search Result Compression（默认关，operator flag） | S-G lab LCR 0.92–0.95；B3-b 收口：bridge grep 腿集成（flag-gated fail-closed delivered<raw）+ 24/24 controlled（tasco 9/12 命中 + 3 collapse 设计内 native）+ macro median 92.7%；分布/计数负区 sg2/sg3 LCR 1.29–2.62 → default-off fail-closed 部署 |
 
-离线 smoke 直接驱动真实 runtime，验证交付 model-visible；R4 的安全合同是“宁可重发，也绝不抑制 stale 内容”。
+## 4. 其余能力的当前状态
 
-## 2. 其余能力：做了什么、为什么暂不开启
+| 能力 | 状态 | 依据 |
+| --- | --- | --- |
+| 结构关系地图（Structural Context） | frozen Native by design | G1 静态资格门不可满足证明（SC2-A vs SC2-D 同签名）；历史 A/B/C 正区结论保留（LCR 0.74 于 Type-B） |
+| 预读优化 / 复核检测 | 维持 OFF | 真实仓收口 NO-GO / 自然机会近乎 0（历史 L1/L2 资产） |
 
-它们都做过真试验，共同卡点是**系统还无法自动可靠地认出"这次该不该管"**，默认不介入是保护而非否定。
+## 5. 回滚与后续
 
-| 能力 | 想做什么 | 试验结果 | 卡点 |
-| --- | --- | --- | --- |
-| 搜索结果压缩 | 对 search 输出本身做结果级压缩 | lab 筛选型 LCR 0.92–0.95 稳定 | 与搜索过程引导分属两层，按单变量纪律独立 qualification（Line-7 候选）；产品层历史 Opportunity 0/10 |
-| 结构关系地图 | 把模块依赖图直接给 Agent，省去跨文件翻找 | SC2-A/B/C 3×3 全正向 | 高扇出/弱信息任务反向；Router 历史正例覆盖 0/3（v4 资格门未过） |
-| 预读优化 | 编辑前只读必要局部 + 直接帮手函数 | VP1/VP3 原始动作级正向 | 真实仓收口 NO-GO：放宽后 0/3 通过、补救 6 次里 5 次（OFF） |
-| 复核检测 | 认出"紧邻重复读同一文件"并提示 | 检测精度验证通过 | 真实场景机会近乎 0（L1 规则资产） |
-
-## 3. 后续路径
-
-按"正区 → 自动开、负区 → 不碰、拿不准 → 不碰"逐子场景补齐资格后再默认开启。
-v0.7 各默认能力均可独立回滚（`CODE_GUARD_TERMINAL_STATE` /
+所有默认 AUTO 能力线均可用环境变量显式回滚（`CODE_GUARD_TERMINAL_STATE` /
 `CODE_GUARD_VALIDATION_DELTA` / `CODE_GUARD_FAILURE_CARRIER_AUTO` /
 `CODE_GUARD_SEARCH_GUIDANCE` / `CODE_GUARD_READ_COMPRESSION` = `0`），
-回滚只影响该能力，仲裁保证其余链路不受影响。离线验证入口见
-[examples/README.md](./examples/README.md)；完整证据链见研发仓
-`CURRENT_STATUS.md`、`docs/architecture/`（契约）与 `docs/experiments/`（报告）。
+回滚只影响该能力，仲裁保证其余链路不受影响；Search Result Compression 默认关，
+`CODE_GUARD_STRUCTURED_SEARCH=1` 显式启用。离线验证入口见
+[examples/README.md](./examples/README.md)。
+
+后续路线（研发线）：E1 Holdout 泛化验证（frozen RC2，预注册纪律）→ 论文增强
+实验（RQ4 / M-V4）→ 1.0 能力扩展（Diff/Patch → Git State/History → Dependency
+→ Test/Build Structured → Trajectory Delta），北极星 = Task Compression
+Coverage@5% ≥ 80%（16 任务族自然 Prompt benchmark）。
