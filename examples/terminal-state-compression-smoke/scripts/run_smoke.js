@@ -18,11 +18,11 @@ const crypto = require("crypto");
 const EXAMPLE_ROOT = path.resolve(__dirname, "..");
 const DEPLOY_ROOT = path.resolve(EXAMPLE_ROOT, "..", ".."); // deploy/
 const HOOK = path.join(DEPLOY_ROOT, "hooks", "post_tool_policy_hook.js");
-const TEST_CMD = "node --test --test-reporter=tap fixture_tests/sample.test.js";
+const TEST_CMD = "node --test --test-reporter=tap fixture_tests/sample.fixture.js";
 const RUN_DIR = path.join(EXAMPLE_ROOT, ".tasco-runs", new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19));
 
 // ---- 1. 运行真实测试,捕获成功终态输出（agent 视角的原始 Bash 输出）----
-const runRes = cp.spawnSync(process.execPath, ["--test", "--test-reporter=tap", "fixture_tests/sample.test.js"], {
+const runRes = cp.spawnSync(process.execPath, ["--test", "--test-reporter=tap", "fixture_tests/sample.fixture.js"], {
   cwd: EXAMPLE_ROOT, encoding: "utf8", timeout: 120000,
 });
 if (runRes.status !== 0) {

@@ -1,6 +1,6 @@
 {
-  "version": "tasco-v0.8-rc1",
-  "releaseTag": "tasco-v0.8-rc1",
+  "version": "tasco-v0.8-rc2",
+  "releaseTag": "tasco-v0.8-rc2",
   "sourceCommit": "34b858e83313a483836d07a674592d9a83aa33c4",
   "runtimeBaseline": "7b13b446555c21551d57ed0d872ba5516845e1bd",
   "buildType": "deploy-closure",
@@ -349,7 +349,7 @@
     "tools/validation_coverage_audit.js": "98f879bf72f9e9c6ed21674fa687d21ff60447511444f250cff452318d443cc6",
     "tools/watch-tasco-session.ps1": "42411a8c3f9263b8737057661d10c27d5d395d55f78cf43c35047be7682c8018"
   },
-  "generatedAt": "2026-09-16T03:54:39.593Z",
+  "generatedAt": "2026-09-20T07:06:00.000Z",
   "capabilityOptions": {
     "profile": "safe",
     "releaseEntry": true,
@@ -383,5 +383,11 @@
     ],
     "closureGate": "every relative require() of payload .js must resolve inside payload",
     "priorScopeNote": "v0.7 manifest missed 6 runtime files later found by RC qualification; closure gate added so this class cannot recur"
+  },
+  "smokeFixtures": {
+    "note": "Non-payload smoke inputs shipped in the release repo (payloadScope keeps examples/ excluded by design). SHA-verified here so closure syncs cannot silently drop them again: the rc2 sync purge of *.test.js had removed the terminal-state smoke fixture, breaking its documented offline smoke. Fixture semantics: *.test.js = project test code excludable by deploy closure; *.fixture.js = runtime smoke input that must survive release sync.",
+    "files": {
+      "examples/terminal-state-compression-smoke/fixture_tests/sample.fixture.js": "6bdbba3495fd47f0c0d8e1c4b6a1cc46e4786d33c709e86f2f8ace2259f69018"
+    }
   }
 }
