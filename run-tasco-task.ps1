@@ -1,4 +1,4 @@
-<#!
+﻿<#!
 .SYNOPSIS
 Runs one Claude Code task and streams token/turn/hook/TASCO telemetry.
 
@@ -230,7 +230,9 @@ try {
     $usage = @{ total = 0; input = 0; output = 0; reasoning = 0; cache = @{ read = 0; write = 0 } }
     $turns = 0
     if (Test-Path -LiteralPath $stdoutFile) {
-      foreach ($rawLine in Get-Content -LiteralPath $stdoutFile) {
+      # stream-json log 是 UTF-8 无 BOM；PS 5.1 Get-Content 默认按 ANSI(936) 解码，
+      # 中文内容会被双字节合并破坏 JSON，result 事件丢失 -> usage/turns 恒空。
+      foreach ($rawLine in Get-Content -LiteralPath $stdoutFile -Encoding UTF8) {
         try { $finalEvent = $rawLine | ConvertFrom-Json -ErrorAction Stop } catch { continue }
         if ($finalEvent.type -eq "step_finish") {
           $turns += 1
@@ -250,7 +252,7 @@ try {
       }
     }
   } elseif (Test-Path -LiteralPath $stdoutFile) {
-    foreach ($rawLine in Get-Content -LiteralPath $stdoutFile) {
+    foreach ($rawLine in Get-Content -LiteralPath $stdoutFile -Encoding UTF8) {
       try { $finalEvent = $rawLine | ConvertFrom-Json -ErrorAction Stop } catch { continue }
       if ($finalEvent.type -eq "result") {
         if ($finalEvent.usage) { $usage = $finalEvent.usage }
