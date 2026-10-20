@@ -1,0 +1,4 @@
+call graph (direct):
+handle (src/entry.js) → processOrder
+processOrder (src/orders/order-service.js) → validatePayment
+validatePayment (src/payments/payment-check.js) → (none)
