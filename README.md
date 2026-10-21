@@ -76,7 +76,7 @@ SHA256，可离线校验完整性。
 ```bash
 git clone https://github.com/sunSUNQ/TASCO.git tasco
 cd tasco
-git checkout tasco-v1.0.1          # 当前发布 tag
+git checkout tasco-v1.0.2          # 当前发布 tag
 
 # 运行时闭包已随本仓提供；常驻接入时指向 hooks
 export CODE_GUARD_HOOK_DIR="$(pwd)/hooks"

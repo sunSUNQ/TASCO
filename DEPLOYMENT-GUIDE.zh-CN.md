@@ -1,6 +1,6 @@
-# TASCO v1.0.1 部署指南
+# TASCO v1.0.2 部署指南
 
-面向接收 TASCO 交付包的使用者。`deploy/` 是**运行时闭包目录**；**完整安装**使用**仓库根目录**（`git clone` + `git checkout tasco-v1.0.1`），根目录同时包含运行时（deploy 闭包镜像到 root）、文档与 `examples/` 冒烟示例。**不需要**研发仓、实验 fixture，也不需要 `npm install`。
+面向接收 TASCO 交付包的使用者。`deploy/` 是**运行时闭包目录**；**完整安装**使用**仓库根目录**（`git clone` + `git checkout tasco-v1.0.2`），根目录同时包含运行时（deploy 闭包镜像到 root）、文档与 `examples/` 冒烟示例。**不需要**研发仓、实验 fixture，也不需要 `npm install`。
 
 - 产品总览、目录结构与各包作用 → [README.md](./README.md)
 - runner 参数、观测脚本输出解读、错误代码与能力边界 → [RUNNER-OBSERVABILITY-GUIDE.zh-CN.md](./RUNNER-OBSERVABILITY-GUIDE.zh-CN.md)
