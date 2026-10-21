@@ -214,3 +214,51 @@ TASCO_V1.0_PUBLICATION_INTEGRITY_FINAL_PASS
 - 停止点：等待负责人批准合入 main。
 
 （§9 列出的既有缺陷为发现项，不阻断本轮三项决策的完成判定，但属负责人后续裁决事项。）
+
+---
+
+# R2 补记（2026-10-21 · TASCO-V1.0-PR1-FINAL-GAP-CLOSURE-R2）
+
+## 最终 PR HEAD
+
+`5c72916be3065f976a500168c01b0527353af67d`（两阶段：源码 `aaf1d24` → manifest `5c72916`）
+
+## 变更文件清单（20 文件）
+
+- 运行时同步（root/deploy 一致性）：`adapters/claude_bridge.js`、`hooks/post_tool_policy_hook.js`、新增 `hooks/post_tool/test_build_structured.js`、`hooks/post_tool/repeated_delivery_suppression.js`
+- 文档/版本统一：`README.md`、`deploy/README.md`、`CAPABILITY-EVIDENCE.zh-CN.md`、`DEPLOYMENT-GUIDE.zh-CN.md`、`RUNNER-OBSERVABILITY-GUIDE.zh-CN.md`
+- Runner 身份：`run-tasco-task.ps1`（默认版本改读 manifest releaseTag，不再回退 tasco-v0.7）
+- 生成器确定性：`product/tools/build_deploy_manifest.js`（generatedAt 取 sourceCommit 提交时间）
+- 测试 fixture：新增 `deploy/fixtures/f1-tap-44pass.out`，8 个测试文件改指向新位置
+
+## 测试结论（全部通过）
+
+- Node 语法：PASS（运行时 / 生成器 / 8 个测试文件）
+- ADV1 真值表（unset=OFF / 1=ON / 0=OFF / legacy=OFF）：**9/9 PASS**
+- TBS default-flag：**4/4 PASS**
+- 离线 smoke：**7/7 SMOKE PASS**
+- root/deploy 入口一致性：运行时 4 文件逐字节一致（differ=0）
+- PowerShell Parser：PASS；UTF-8 扫描：0 乱码；Markdown 链接：0 断链
+
+## Manifest
+
+- sourceCommit = `aaf1d241f7466970d5800fe11e2eaa47a705d652`（源码提交，非 manifest 自身 HEAD）
+- payload = 144 / package = 148 / sha256 = 331
+- `--check` 全通过（0 缺失 / 0 哈希错 / 0 未登记）
+- 同源两次生成字节一致（SHA256 `58FE7AB2…`）
+
+## 当前版本声明核查
+
+所有「当前版本」声明统一为 `tasco-v1.0.0`；v0.x 仅存于「历史发布」与 Roadmap 历史项；
+「Pending Release Approval」已删除；BibTeX = v1.0.0。
+
+## 未解决问题（遗留，非阻断）
+
+- `deploy/` 下 read/search 测试仍依赖研发仓 fixture（`read_lab/r1.js`、`pilot_manifests/`、`compression_lab/`、`hook_ab_test/`），未随本仓发布 → 该类测试不可独立复现，已如实标记，不计入 PASS。
+- 上游 tag / Release 未改动（任务约束）。
+
+## R2 最终判定
+
+```
+TASCO_V1.0_PR1_READY_TO_MERGE
+```
