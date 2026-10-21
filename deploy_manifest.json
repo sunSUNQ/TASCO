@@ -1,7 +1,7 @@
 {
   "version": "tasco-v1.0.2",
   "releaseTag": "tasco-v1.0.2",
-  "sourceCommit": "9ba6c1cb6544f9ff893faa908c2afb8be5108ab2",
+  "sourceCommit": "2068da7d822124b711fdd0cbff2691c455448be6",
   "runtimeBaseline": "7b13b446555c21551d57ed0d872ba5516845e1bd",
   "buildType": "deploy-closure",
   "dirtySourceAllowed": false,
@@ -209,13 +209,13 @@
     "tools/watch-tasco-session.ps1"
   ],
   "sha256": {
-    "CAPABILITY-EVIDENCE.zh-CN.md": "15cbe5482488c6d5a5750d71a8683ed6a0f1d27c33b607061eeb8ab5c668d50a",
+    "CAPABILITY-EVIDENCE.zh-CN.md": "258a4bdb865b2c96bbafbaa7c6745a694230e2c23b598bfdee400a99ac0977c6",
     "CHANGELOG.md": "43bbced7bdd4ccd0b8ac22cfd535c3418ff1668a83ea95835f7edaac53e82be7",
-    "DEPLOYMENT-GUIDE.zh-CN.md": "22f57caeee42bd8f3dba4ed2723687acc47720497d1f9a696d7033e90c696f8e",
+    "DEPLOYMENT-GUIDE.zh-CN.md": "28029d73d4cffdbbc10490f01226e98f61220191dc06aee5270009de3e287ba2",
     "LICENSE": "a2197be5056c77a119ce168f1833526148080ca32bc0198b3ad248f9ecc38111",
     "RC2-RELEASE-CLOSURE-REPAIR-QUALIFICATION.zh-CN.md": "c5761cd57da02af8ebdaae14dfd5189bbde64cad50e5c8a03b207a15a476c773",
-    "README.md": "960660ac8a57f208e203d56dbd9fa53588657df363bb5d423681cb4e15e40813",
-    "RUNNER-OBSERVABILITY-GUIDE.zh-CN.md": "ff78ef588df2fc922459741c6a113d3ff9859d5ca622befe526a431cb6364a47",
+    "README.md": "6f25bb552f2ee1f58344ebc8d1115e7835ee1c850df1b3a789c6355241254e9e",
+    "RUNNER-OBSERVABILITY-GUIDE.zh-CN.md": "38be1c77966f25da196c7b0a40e9ad147a5a7114dd865b9eaf73df78061824fc",
     "adapters/agent_runtime.js": "311736510893a7849ef0003949d6130a9c8d5c48842ef3f45925bf3a8da9ba4b",
     "adapters/canonical_tools.js": "5c4c42b0faca19e1de3d9f4a99f450ded914565d81ddb4b25af2511f0556444a",
     "adapters/claude_bridge.js": "3e6e207d15906a32f51c5f93bda14847d8378637f4c63f426dfa3ccd8117167c",
@@ -248,7 +248,7 @@
     "core/edit_policy.js": "2e27858543cdb14ff711a25bdb72556faf26e043d66fff1dab1dc7b5e7ef233f",
     "core/evidence_state.js": "ea20debcb9b76e15e675226d73ad7a61e7381f323e9c1eafb2d8b1c970e031c1",
     "core/fallback.js": "0d932b7a2f8ba9cb715505090bf9ec36a0d72e979354fe2232ec07074e0ad503",
-    "deploy/README.md": "994f73c9d928f051bd98fe152822e4ddb4829f520a4a41b9143a3f59d7535582",
+    "deploy/README.md": "5389695ce398ad8c63997b633c1b8f10ae66159b9a764a5e49de6d936445393b",
     "deploy/adapters/agent_runtime.js": "311736510893a7849ef0003949d6130a9c8d5c48842ef3f45925bf3a8da9ba4b",
     "deploy/adapters/canonical_tools.js": "5c4c42b0faca19e1de3d9f4a99f450ded914565d81ddb4b25af2511f0556444a",
     "deploy/adapters/claude_bridge.js": "3e6e207d15906a32f51c5f93bda14847d8378637f4c63f426dfa3ccd8117167c",
@@ -546,7 +546,7 @@
     "tools/validation_coverage_audit.js": "98f879bf72f9e9c6ed21674fa687d21ff60447511444f250cff452318d443cc6",
     "tools/watch-tasco-session.ps1": "42411a8c3f9263b8737057661d10c27d5d395d55f78cf43c35047be7682c8018"
   },
-  "generatedAt": "2026-10-21T12:08:26.000Z",
+  "generatedAt": "2026-10-21T12:23:26.000Z",
   "capabilityOptions": {
     "profile": "safe",
     "releaseEntry": true,
