@@ -5,21 +5,22 @@
 工具调用和探索轮次。它**不是通用 summarizer**：是否优化、何时优化由证据形态决定，
 其余场景**默认保持 Native（原生执行）**。
 本仓 = TASCO 的**产品发布仓**（deploy 闭包镜像到 root）。当前发布内容 =
-**tasco-v1.0.0** 最终稳定发布（Feature Development Frozen · Maintenance Only）：
+**tasco-v1.0.1** 维护补丁（Feature Development Frozen · Maintenance Only）：
 deploy 闭包由确定性生成器产出，`deploy_manifest.json` 内含全部 payload 文件的
 SHA256，可离线校验完整性。
 
-## 当前版本：tasco-v1.0.0
+## 当前版本：tasco-v1.0.1
 
 ```text
 发布内容
-└─ tasco-v1.0.0 最终稳定发布（tag tasco-v1.0.0）
+└─ tasco-v1.0.1 维护补丁（tag tasco-v1.0.1；修复 v1.0.0 已确认的发布交付缺陷）
    默认 AUTO（runner 默认开启）：Diagnostic / Terminal-State /
    Validation Delta / Failure Carrier / Search Guidance（跨仓）/ Read R1-R5
    默认关：Search Result Compression（operator flag）；Structural Context =
    frozen Native by design；ADV1 Transport Guard（opt-in，显式 =1 开启）
 
 历史发布
+├─ tasco-v1.0.0  最终稳定发布（发布镜像/Manifest/文档存在已确认缺陷，见 v1.0.1）
 ├─ tasco-v0.8-rc2  Existing-Line 7/7 收口 + Release Qualification
 ├─ tasco-v0.7  Validation Coverage Expansion（M-V3 验证语义身份 + Search
 │              Compression bridge 集成）
@@ -71,7 +72,7 @@ SHA256，可离线校验完整性。
 ```bash
 git clone https://github.com/sunSUNQ/TASCO.git tasco
 cd tasco
-git checkout tasco-v1.0.0          # 当前发布 tag
+git checkout tasco-v1.0.1          # 当前发布 tag
 
 # 运行时闭包已随本仓提供；常驻接入时指向 hooks
 export CODE_GUARD_HOOK_DIR="$(pwd)/hooks"
@@ -222,6 +223,7 @@ cd examples\session-marker-smoke;              npm run smoke       # 会话标�
 - [x] v0.7：Validation Coverage Expansion（M-V3 语义身份 + Search Compression 集成）
 - [x] v0.8-rc2：Existing-Line 7/7 收口 + Release Qualification（manifest 闭包修复）
 - [x] v1.0.0：最终稳定发布（tag `tasco-v1.0.0`；Feature Development Frozen · Maintenance Only）
+- [x] v1.0.1：维护补丁（tag `tasco-v1.0.1`；修复 v1.0.0 已确认的发布交付缺陷）
 
 # License
 
@@ -236,6 +238,6 @@ cd examples\session-marker-smoke;              npm run smoke       # 会话标�
   author       = {TASCO contributors},
   year         = {2026},
   howpublished = {\url{https://github.com/sunSUNQ/TASCO}},
-  note         = {v1.0.0: 7/7 existing capability lines closed and frozen (large diagnostic, failure carrier, terminal state, validation delta, search guidance + compression, read R1-R5) under one frozen arbitration contract}
+  note         = {v1.0.1: 7/7 existing capability lines closed and frozen (large diagnostic, failure carrier, terminal state, validation delta, search guidance + compression, read R1-R5) under one frozen arbitration contract}
 }
 ```

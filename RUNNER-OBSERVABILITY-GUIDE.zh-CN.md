@@ -1,6 +1,6 @@
-# TASCO v1.0.0：运行与观测指南
+# TASCO v1.0.1：运行与观测指南
 
-本文说明如何**跑一个 TASCO 任务**、**读取压缩结论**与**定位配置问题**，不改变任何压缩策略。默认行为是 Native：未命中已冻结正区的任务保持原生执行是预期结果，不是失败。当前版本（`tasco-v1.0.0`）六条能力主线默认 AUTO（成功终态 / 失败诊断 / 重复验证 / 统一仲裁 / 精准代码搜索 / 任务驱动 Read），各自可用环境变量显式回滚。
+本文说明如何**跑一个 TASCO 任务**、**读取压缩结论**与**定位配置问题**，不改变任何压缩策略。默认行为是 Native：未命中已冻结正区的任务保持原生执行是预期结果，不是失败。当前版本（`tasco-v1.0.1`）六条能力主线默认 AUTO（成功终态 / 失败诊断 / 重复验证 / 统一仲裁 / 精准代码搜索 / 任务驱动 Read），各自可用环境变量显式回滚。
 
 - 安装、环境要求、日常常驻接线与卸载 → [DEPLOYMENT-GUIDE.zh-CN.md](./DEPLOYMENT-GUIDE.zh-CN.md)
 - 产品总览与目录结构 → [README.md](./README.md)
@@ -92,7 +92,7 @@ cd D:\tasco\examples\precision-search-smoke;            npm run smoke   # ⑤ �
 | `-EnableTasco` | 否 | 关 | 加上才接入 TASCO hooks；省略即原生对照。 |
 | `-CodeAgentCommand` / `-ClaudeCommand` / `-OpenCodeCommand` | 否 | 对应环境变量或自动发现 | CLI 不在 PATH 时传绝对路径；只传当前 `-Agent` 对应的一个。 |
 | `-OpenCodeModel` | 否 | `deepseek/deepseek-v4-flash` | 仅 OpenCode。 |
-| `-TascoVersion` | 否 | `tasco-v1.0.0` | 仅写入 telemetry 的版本标签，不切换任何代码。通常不要设置。 |
+| `-TascoVersion` | 否 | `tasco-v1.0.1` | 仅写入 telemetry 的版本标签，不切换任何代码。通常不要设置。 |
 | `-PollMilliseconds` | 否 | `750` | 实时输出刷新间隔。通常保持默认。 |
 
 运行产物：`<项目>\.tasco-runs\<时间戳>\`（先看 `summary.json`，含 run 结论 + 内嵌压缩结论）。
@@ -146,7 +146,7 @@ Token 节省  : gross=5619 recovery=0 net=5619 mode=estimated_from_telemetry
 
 ## 能力边界（哪些会压缩、哪些保持 Native）
 
-`-EnableTasco` 只表示接入 hooks，不代表所有输出都会被压缩。`tasco-v1.0.0`
+`-EnableTasco` 只表示接入 hooks，不代表所有输出都会被压缩。`tasco-v1.0.1`
 **六条主线默认 AUTO**，其余保持 Native/Shadow：
 
 | 能力 | 状态 | 自动压缩的任务 | 保持 Native 的任务 | 回滚开关 |

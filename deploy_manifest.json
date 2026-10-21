@@ -1,6 +1,6 @@
 {
-  "version": "tasco-v1.0.0",
-  "releaseTag": "tasco-v1.0.0",
+  "version": "tasco-v1.0.1",
+  "releaseTag": "tasco-v1.0.1",
   "sourceCommit": "89d3f0eba42caf157df0040e52350d41946a3f81",
   "runtimeBaseline": "7b13b446555c21551d57ed0d872ba5516845e1bd",
   "buildType": "deploy-closure",

@@ -1,8 +1,8 @@
-# TASCO v1.0.0 — 选择性上下文压缩
+# TASCO v1.0.1 — 选择性上下文压缩
 
 **TASCO**（**T**ask-**A**ware **S**elective **C**ontext **O**ptimization，任务感知选择性上下文优化）是面向 Code Agent 的**选择性上下文压缩工具**：对**已资格化的高容量、低决策密度诊断输出**做语义压缩，减少送入模型上下文的工具输出；**未命中已验证规则的输出默认保持 Native（原生执行）**。
 
-当前产品版（`tasco-v1.0.0`）有六条能力主线**默认自动开启**：**Diagnostic Semantic Compression（失败/诊断日志）**、**Terminal-State Success Compression（成功终态）**、**Validation Delta（重复验证只报变化）**、**Failure Carrier（真实失败自动进入诊断链）**、**精准代码搜索（DISCOVERY/FILTER 意图跨仓注入搜索收敛引导）**、**任务驱动 Read 压缩（R1 目标符号提取 / R2 调用关系边 / R3 实现链 / R4 重复读抑制 / R5 章节提取）**——每次输出只会有一个能力生效（冻结仲裁：失败诊断 > 稳定 VD > 成功终态 > Native；read_task_compression 只作用于 read_file 事件，与 shell 域候选天然互斥），且压缩结果经 model-visible 验证真实送达模型。各能力可用环境变量独立回滚（见「能力边界」表），未知/不安全场景一律 Native。
+当前产品版（`tasco-v1.0.1`）有六条能力主线**默认自动开启**：**Diagnostic Semantic Compression（失败/诊断日志）**、**Terminal-State Success Compression（成功终态）**、**Validation Delta（重复验证只报变化）**、**Failure Carrier（真实失败自动进入诊断链）**、**精准代码搜索（DISCOVERY/FILTER 意图跨仓注入搜索收敛引导）**、**任务驱动 Read 压缩（R1 目标符号提取 / R2 调用关系边 / R3 实现链 / R4 重复读抑制 / R5 章节提取）**——每次输出只会有一个能力生效（冻结仲裁：失败诊断 > 稳定 VD > 成功终态 > Native；read_task_compression 只作用于 read_file 事件，与 shell 域候选天然互斥），且压缩结果经 model-visible 验证真实送达模型。各能力可用环境变量独立回滚（见「能力边界」表），未知/不安全场景一律 Native。
 
 > 本目录（`deploy/`）是**自包含交付包**：整个目录复制到目标机即可部署，不需要研发仓、`npm install` 或 Python。
 
@@ -118,7 +118,7 @@ deploy/
 └─ requirements.txt                 # 历史 RLM 路径的 Python 依赖（默认体验不需要）
 ```
 
-五层职责：**Skill/Spec** 只做行为引导，**Core** 只做「该不该压缩」判定，**Hook** 只做压缩执行，**Adapter** 只做 Agent 协议接线，**tools/** 只做运维观测。改动冻结目录（`core/`、`hooks/`、`adapters/`、`config/`）会破坏 `deploy_manifest.json` 完整性校验；`examples/` 冒烟 fixture 属于验证辅助，不在 payload 清单内（当前 manifest `tasco-v1.0.0`，payload 文件数见 `deploy_manifest.json`，含全部 SHA256，目标机可离线校验）。
+五层职责：**Skill/Spec** 只做行为引导，**Core** 只做「该不该压缩」判定，**Hook** 只做压缩执行，**Adapter** 只做 Agent 协议接线，**tools/** 只做运维观测。改动冻结目录（`core/`、`hooks/`、`adapters/`、`config/`）会破坏 `deploy_manifest.json` 完整性校验；`examples/` 冒烟 fixture 属于验证辅助，不在 payload 清单内（当前 manifest `tasco-v1.0.1`，payload 文件数见 `deploy_manifest.json`，含全部 SHA256，目标机可离线校验）。
 
 ## 三层能力结构：specs / skills / hooks
 
