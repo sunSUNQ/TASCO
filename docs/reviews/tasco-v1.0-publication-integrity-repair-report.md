@@ -23,10 +23,10 @@
 
 | 项 | 值 |
 | --- | --- |
+| 最终提交 SHA（产品/发布顶点） | `a175556a57374fcea57efd2bd7b4922703bfd6cd`（阶段二 Manifest 提交） |
 | 阶段一（源代码）提交 | `a13271d873afc286995f4724922f5693bb60229d` |
 | 阶段二（Manifest）提交 | `a175556a57374fcea57efd2bd7b4922703bfd6cd` |
-| 阶段三（最终报告 + 生成器 `docs/` scope） | `8891f63f23803573e66ec93f142c99c80a8ced6d` |
-| 最终提交 SHA（修复分支 HEAD） | 见上「阶段三」`8891f63`（2026-10-21 撰写）
+| 阶段三（最终报告，docs 记录，不改产品内容） | `8891f63f23803573e66ec93f142c99c80a8ced6d` |
 | Manifest `sourceCommit` | `a13271d873afc286995f4724922f5693bb60229d` |
 
 两阶段提交满足「sourceCommit 记录可追溯源代码提交、不要求等于最终 Manifest 提交 HEAD」的决策，
