@@ -1,6 +1,6 @@
 # TASCO v1.0.0 — 选择性上下文压缩
 
-**TASCO**（**T**ool-output **A**daptive **S**elective **C**ontext **O**ptimization）是面向 Code Agent 的**选择性上下文压缩工具**：对**已资格化的高容量、低决策密度诊断输出**做语义压缩，减少送入模型上下文的工具输出；**未命中已验证规则的输出默认保持 Native（原生执行）**。
+**TASCO**（**T**ask-**A**ware **S**elective **C**ontext **O**ptimization，任务感知选择性上下文优化）是面向 Code Agent 的**选择性上下文压缩工具**：对**已资格化的高容量、低决策密度诊断输出**做语义压缩，减少送入模型上下文的工具输出；**未命中已验证规则的输出默认保持 Native（原生执行）**。
 
 当前产品版（`tasco-v1.0.0`）有六条能力主线**默认自动开启**：**Diagnostic Semantic Compression（失败/诊断日志）**、**Terminal-State Success Compression（成功终态）**、**Validation Delta（重复验证只报变化）**、**Failure Carrier（真实失败自动进入诊断链）**、**精准代码搜索（DISCOVERY/FILTER 意图跨仓注入搜索收敛引导）**、**任务驱动 Read 压缩（R1 目标符号提取 / R2 调用关系边 / R3 实现链 / R4 重复读抑制 / R5 章节提取）**——每次输出只会有一个能力生效（冻结仲裁：失败诊断 > 稳定 VD > 成功终态 > Native；read_task_compression 只作用于 read_file 事件，与 shell 域候选天然互斥），且压缩结果经 model-visible 验证真实送达模型。各能力可用环境变量独立回滚（见「能力边界」表），未知/不安全场景一律 Native。
 
@@ -154,4 +154,4 @@ context_budget\claude_auto_canary.jsonl   # 每次压缩判定事件（selected/
 
 ## License
 
-本包暂未指定开源许可证；正式发布前请与维护者确认。
+[MIT](../LICENSE) — Copyright (c) 2026 sunSUNQ (TASCO contributors)

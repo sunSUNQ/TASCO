@@ -1,12 +1,12 @@
 # TASCO v1.0.0 部署指南
 
-面向接收 TASCO 交付包的使用者。交付包就是**一个完整的 `deploy/` 目录**：运行时、文档、运维脚本与冒烟示例全部内置。**不需要**研发仓、实验 fixture，也不需要 `npm install`。
+面向接收 TASCO 交付包的使用者。`deploy/` 是**运行时闭包目录**；**完整安装**使用**仓库根目录**（`git clone` + `git checkout tasco-v1.0.0`），根目录同时包含运行时（deploy 闭包镜像到 root）、文档与 `examples/` 冒烟示例。**不需要**研发仓、实验 fixture，也不需要 `npm install`。
 
 - 产品总览、目录结构与各包作用 → [README.md](./README.md)
 - runner 参数、观测脚本输出解读、错误代码与能力边界 → [RUNNER-OBSERVABILITY-GUIDE.zh-CN.md](./RUNNER-OBSERVABILITY-GUIDE.zh-CN.md)
 - 已开启能力的试验佐证、其余能力验证进度 → [CAPABILITY-EVIDENCE.zh-CN.md](./CAPABILITY-EVIDENCE.zh-CN.md)
 
-TASCO 默认只对**高容量、低决策密度的单根因诊断输出**做选择性语义压缩（L4 AUTO），其余场景**默认保持 Native（原生执行）**——见文末「能力边界」。
+TASCO 六条能力主线**默认自动开启**（成功终态 / 失败诊断 / 重复验证 / 统一仲裁 / 精准代码搜索 / 任务驱动 Read），未命中已验证规则的输出**默认保持 Native（原生执行）**——见文末「能力边界」。
 
 ## 1. 新机最低要求
 
@@ -22,7 +22,7 @@ TASCO 默认只对**高容量、低决策密度的单根因诊断输出**做选�
 
 ### 第 1 步：放置部署包
 
-把整个 `deploy/` 目录复制到目标机固定位置（本文以 `D:\tasco` 为例；实际放哪都行，只需把后续命令里的路径替换掉）。**不要改动包内文件**，也不要只复制其中某几个子目录。
+把**仓库根目录**（或至少 `deploy/` 运行时目录 + 根目录下的 `tools/` 与 `examples/`）放到目标机固定位置（本文以 `D:\tasco` 为例；实际放哪都行，只需把后续命令里的路径替换掉）。**不要改动包内文件**，也不要只复制其中某几个子目录。
 
 > **CodeAgentCLI 先授权目录（使用 CodeAgentCLI 的前提）**：runner 在后台非交互启动 CLI，目录授权询问无法弹出，未授权目录会导致任务直接失败。放包后先执行一次：
 >
@@ -192,7 +192,13 @@ $env:CODE_GUARD_HOOK_DIR = "D:\tasco\hooks"   # 指向本包 hooks/（压缩执�
 
 | 能力 | 状态 | 说明 |
 | --- | --- | --- |
-| Diagnostic Semantic Compression | **L4 AUTO（默认开）** | 高容量、低决策密度的单根因诊断输出（测试/构建失败、堆栈、日志）自动压缩；质量优先，LCR < 1 才判定净收益 |
-| Search / Structural / Read / Validation | L1–L2，Native / Shadow | 保留已验证机制与正区证据，未完成发布 Gate，默认不介入 |
+| Diagnostic Semantic Compression | **AUTO（默认开）** | 高容量、低决策密度的单根因诊断输出（测试/构建失败、堆栈、日志）自动压缩；质量优先，LCR < 1 才判定净收益 |
+| Failure Carrier → Diagnostic | **AUTO（默认开）** | 真实测试/构建失败（`exit!=0`）自动进入诊断压缩链；原命令/exit code/输出全程保留 |
+| Terminal-State Success | **AUTO（默认开）** | `exit=0` 且完整可识别的成功 test/build 终态 |
+| Validation Delta | **AUTO（默认开）** | 同一验证重复执行且可比较：只交付变化 |
+| 精准代码搜索（Search Guidance） | **AUTO（默认开）** | DISCOVERY/FILTER 意图正区跨仓注入搜索收敛引导 |
+| Read R1-R5 | **AUTO（默认开）** | 任务驱动读取压缩（R1-R5） |
+| Search Result Compression | 独立开关（默认关） | `CODE_GUARD_STRUCTURED_SEARCH=1` 显式启用 |
+| Structural Context | frozen Native | 设计性 Native；探索削减边界证据 |
 
-未命中已验证规则的输出一律 Native（fail-open：任何异常都回退原生，不阻断 Agent）。压缩能力无外部 API 依赖：压缩模型由 Agent 内部路由，部署方无需配置第三方端点。完整性校验：`deploy_manifest.json` 记录全部 113 个 payload 文件 SHA256，目标机可离线校验包是否被改动。
+未命中已验证规则的输出一律 Native（fail-open：任何异常都回退原生，不阻断 Agent）。压缩能力无外部 API 依赖：压缩模型由 Agent 内部路由，部署方无需配置第三方端点。完整性校验：`deploy_manifest.json` 记录全部 payload 文件 SHA256，目标机可离线校验包是否被改动。
