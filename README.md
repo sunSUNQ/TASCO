@@ -5,21 +5,25 @@
 工具调用和探索轮次。它**不是通用 summarizer**：是否优化、何时优化由证据形态决定，
 其余场景**默认保持 Native（原生执行）**。
 本仓 = TASCO 的**产品发布仓**（deploy 闭包镜像到 root）。当前发布内容 =
-**tasco-v1.0.1** 维护补丁（Feature Development Frozen · Maintenance Only）：
+**tasco-v1.0.2** 诊断保真安全维护补丁（Feature Development Frozen · Maintenance Only）：
 deploy 闭包由确定性生成器产出，`deploy_manifest.json` 内含全部 payload 文件的
 SHA256，可离线校验完整性。
 
-## 当前版本：tasco-v1.0.1
+## 当前版本：tasco-v1.0.2
 
 ```text
 发布内容
-└─ tasco-v1.0.1 维护补丁（tag tasco-v1.0.1；修复 v1.0.0 已确认的发布交付缺陷）
-   默认 AUTO（runner 默认开启）：Diagnostic / Terminal-State /
-   Validation Delta / Failure Carrier / Search Guidance（跨仓）/ Read R1-R5
-   默认关：Search Result Compression（operator flag）；Structural Context =
-   frozen Native by design；ADV1 Transport Guard（opt-in，显式 =1 开启）
+└─ tasco-v1.0.2 诊断保真安全维护补丁（tag tasco-v1.0.2）
+   · 修复已知失败诊断事实丢失（ROOT CAUSE / FATAL / 失败计数 / not ok / 堆栈
+     文件:行号），新增 model-visible 诊断保真门（三态：no_risk / facts_identified
+     / uncertain），识别 Windows 盘符/UNC、Go/Java/Rust 等失败形态；
+   · 诊断风险不确定时回退完整原文（Native），rescued=true 不再等同于保真通过；
+   · 因而部分诊断场景局部压缩率可能下降（保真优先于 Token 节省）。
+   默认 AUTO：Diagnostic / Terminal-State / Validation Delta / Failure Carrier /
+   Search Guidance（跨仓）/ Read R1-R5
 
 历史发布
+├─ tasco-v1.0.1  维护补丁（修复 v1.0.0 已确认的发布交付缺陷）
 ├─ tasco-v1.0.0  最终稳定发布（发布镜像/Manifest/文档存在已确认缺陷，见 v1.0.1）
 ├─ tasco-v0.8-rc2  Existing-Line 7/7 收口 + Release Qualification
 ├─ tasco-v0.7  Validation Coverage Expansion（M-V3 验证语义身份 + Search

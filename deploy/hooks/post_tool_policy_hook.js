@@ -22,6 +22,10 @@ const { createSummaries } = require("./post_tool/summaries");
 // legacy); =1 = enabled. Any other explicit value keeps legacy semantics
 // (disabled). Eligibility P1-P5 unchanged.
 const testBuildStructured = require("./post_tool/test_build_structured.js");
+// P0 repair: model-visible diagnostic fidelity gate. Fail-closed: a compressed
+// shell summary that drops critical diagnostic facts (root-cause / fatal /
+// failure-count / assertion / stack) must fall back to native delivery.
+const { verifyDiagnosticFidelity } = require("./post_tool/diagnostic_fidelity.js");
 const { createTerminalStateCompressor } = require("./post_tool/terminal_state");
 const { createCompressionMetrics } = require("./post_tool/observability/compression_metrics");
 const { createSessionMetrics } = require("./post_tool/observability/session_metrics");
@@ -420,6 +424,43 @@ function looksLikeEditSucceeded(payload) {
     text.includes("updated") ||
     text.includes("modified")
   );
+}
+
+// P0 repair (R2): model-visible diagnostic fidelity gate for shell summaries.
+// Three-state classification: no_risk -> proceed; facts_identified -> verify,
+// fall back to native on any missing fact; uncertain -> native. Fidelity state
+// and actual delivery are recorded separately; `rescued` is independent of the
+// fidelity verdict and must not be read as "fidelity passed".
+function fidelityGate(toolName, toolText, summary, reasonLabel) {
+  const fidelity = verifyDiagnosticFidelity(toolText, summary);
+  const proceed = fidelity.gate !== "fail"; // no_risk | pass -> proceed; fail -> native
+  const row = {
+    event: "diagnostic_fidelity",
+    tool: toolName,
+    reason: reasonLabel,
+    diagnostic_risk_state: fidelity.state,
+    fidelity_verdict: fidelity.verdict,
+    fallback_reason: fidelity.gate === "fail" ? fidelity.verdict : null,
+    actual_delivery: proceed ? "compressed" : "native",
+    rescued: null, // adapter-level evidence footer; NOT equivalent to fidelity pass
+    critical_fact_count: fidelity.facts.length,
+    missing_fact_count: fidelity.missing.length,
+    missing_facts: fidelity.missing.map((m) => ({ type: m.type, line: m.line })),
+    raw_chars: String(toolText || "").length,
+    compressed_chars: String(summary || "").length,
+    at: new Date().toISOString(),
+  };
+  try {
+    const p = sessionPath("tasco_metrics/diagnostic_fidelity.ndjson");
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    fs.appendFileSync(p, JSON.stringify(row) + "\n", "utf8");
+  } catch (_e) {
+    /* observability never blocks delivery */
+  }
+  log(
+    `diagnostic_fidelity state=${fidelity.state} verdict=${fidelity.verdict} tool=${toolName} reason=${reasonLabel} missing=${fidelity.missing.map((m) => `${m.type}@${m.line}`).join(",")}`
+  );
+  return { proceed, fidelity };
 }
 
 function main() {
@@ -1028,6 +1069,20 @@ function main() {
 
       const finalContext = summary;
 
+      // P0 repair: model-visible diagnostic fidelity gate (fail-closed).
+      // If critical diagnostic facts (root-cause/fatal/failure-count/assertion/
+      // stack) would be dropped by the summary, fall back to native delivery.
+      const fidelity = fidelityGate(
+        toolName,
+        toolText,
+        finalContext,
+        isShellSearch ? "shell_search" : "large_output"
+      );
+      if (!fidelity.proceed) {
+        output();
+        process.exit(0);
+      }
+
       log(
         `quick shell summary tool=${toolName}, reason=${isShellSearch ? "shell_search" : "large_output"}, raw=${rawChars}, compressed=${finalContext.length}`
       );
@@ -1040,6 +1095,13 @@ function main() {
     if (hasShellError(toolText)) {
       const summary = quickShellSummary(toolName, toolText);
       const finalContext = summary;
+
+      // P0 repair: model-visible diagnostic fidelity gate (fail-closed).
+      const fidelity = fidelityGate(toolName, toolText, finalContext, "has_error");
+      if (!fidelity.proceed) {
+        output();
+        process.exit(0);
+      }
 
       log(
         `quick shell summary tool=${toolName}, reason=has_error, raw=${rawChars}, compressed=${finalContext.length}`
