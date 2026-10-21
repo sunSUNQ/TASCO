@@ -1,6 +1,6 @@
-# TASCO v0.5：运行与观测指南
+# TASCO v1.0.0：运行与观测指南
 
-本文说明如何**跑一个 TASCO 任务**、**读取压缩结论**与**定位配置问题**，不改变任何压缩策略。默认行为是 Native：未命中已冻结正区的任务保持原生执行是预期结果，不是失败。当前版本（`tasco-v0.5-p1`）四条能力主线默认 AUTO（成功终态 / 失败诊断 / 重复验证 / 统一仲裁），各自可用环境变量显式回滚。
+本文说明如何**跑一个 TASCO 任务**、**读取压缩结论**与**定位配置问题**，不改变任何压缩策略。默认行为是 Native：未命中已冻结正区的任务保持原生执行是预期结果，不是失败。当前版本（`tasco-v1.0.0`）六条能力主线默认 AUTO（成功终态 / 失败诊断 / 重复验证 / 统一仲裁 / 精准代码搜索 / 任务驱动 Read），各自可用环境变量显式回滚。
 
 - 安装、环境要求、日常常驻接线与卸载 → [DEPLOYMENT-GUIDE.zh-CN.md](./DEPLOYMENT-GUIDE.zh-CN.md)
 - 产品总览与目录结构 → [README.md](./README.md)
@@ -92,7 +92,7 @@ cd D:\tasco\examples\precision-search-smoke;            npm run smoke   # ⑤ �
 | `-EnableTasco` | 否 | 关 | 加上才接入 TASCO hooks；省略即原生对照。 |
 | `-CodeAgentCommand` / `-ClaudeCommand` / `-OpenCodeCommand` | 否 | 对应环境变量或自动发现 | CLI 不在 PATH 时传绝对路径；只传当前 `-Agent` 对应的一个。 |
 | `-OpenCodeModel` | 否 | `deepseek/deepseek-v4-flash` | 仅 OpenCode。 |
-| `-TascoVersion` | 否 | `tasco-v0.5-p1` | 仅写入 telemetry 的版本标签，不切换任何代码。通常不要设置。 |
+| `-TascoVersion` | 否 | `tasco-v1.0.0` | 仅写入 telemetry 的版本标签，不切换任何代码。通常不要设置。 |
 | `-PollMilliseconds` | 否 | `750` | 实时输出刷新间隔。通常保持默认。 |
 
 运行产物：`<项目>\.tasco-runs\<时间戳>\`（先看 `summary.json`，含 run 结论 + 内嵌压缩结论）。
@@ -146,8 +146,8 @@ Token 节省  : gross=5619 recovery=0 net=5619 mode=estimated_from_telemetry
 
 ## 能力边界（哪些会压缩、哪些保持 Native）
 
-`-EnableTasco` 只表示接入 hooks，不代表所有输出都会被压缩。v0.6（`tasco-v0.7`）
-**五条主线默认 AUTO**，其余保持 Native/Shadow：
+`-EnableTasco` 只表示接入 hooks，不代表所有输出都会被压缩。`tasco-v1.0.0`
+**六条主线默认 AUTO**，其余保持 Native/Shadow：
 
 | 能力 | 状态 | 自动压缩的任务 | 保持 Native 的任务 | 回滚开关 |
 | --- | --- | --- | --- | --- |
@@ -158,8 +158,15 @@ Token 节省  : gross=5619 recovery=0 net=5619 mode=estimated_from_telemetry
 | 精准代码搜索（⑤，Line-5） | **AUTO（runner 默认）** | DISCOVERY/FILTER 意图正区（调用链入口、wrapper→实现、依赖定位、symbol 消歧）跨仓注入搜索收敛引导 | LOOKUP（找定义）、枚举、统计、未知意图 → Native | `CODE_GUARD_SEARCH_GUIDANCE=0`（全关）/ `CODE_GUARD_SEARCH_GUIDANCE_AUTO=0`（回到白名单模式） |
 | 任务驱动 Read 压缩（⑥，Line-6） | **AUTO（runner 默认）** | 任务派生的读取：R1 目标符号提取（95%+）、R2 调用关系边、R3 实现链、R4 重复读抑制、R5 章节提取；全部 model-visible | 无法分类（R0）、无任务符号/map、无净节省、非入口文件读取、小读取 → Native | `CODE_GUARD_READ_COMPRESSION=0`（读全 Native）/ `CODE_GUARD_READ_MAP_AUTOBUILD=0`（关闭 map 按需生成，缺 map 仓 R2/R3 → Native） |
 | Structural / Search Result | Native / Shadow | —（边界已冻结，未达默认开启门槛） | 一切默认原生 | — |
+| Test/Build Structured（**输入预处理**，非独立能力） | **AUTO（runner 默认）** | test/build/check 输出的 P1–P5 重复结构折叠，折叠文本只被 quick_shell 诊断 winner 消费；证据保留契约逐字不变 | 非 test/build 输出、无重复结构、折叠无节省 → Native | `CODE_GUARD_TEST_BUILD_STRUCTURED=0`（回到 legacy quick_shell） |
 
 统一仲裁（冻结 precedence）：**失败诊断 > 稳定 Validation Delta > 成功终态 > Native**
 ——一次输出只有一个 winner，`double_apply_count` 恒为 0；失败语义只看
 `original_exit_code`（Failure Carrier 契约），与 wrapper 进程 exit=0 严格分离。
 不要用环境变量强行扩大未达门槛的能力——默认 Native 与显式回滚是安全设计的一部分。
+
+> Test/Build Structured 是**仲裁之前的输入预处理**，不是仲裁候选，因此**不产生新的
+> Compression Winner**：它把重复结构折叠为占位计数，折叠文本只被 `quick_shell`
+> 诊断 winner 消费；若仲裁保持 Native，折叠文本永不交付（原始输出继续原样返回）。
+> 此机制不扩大默认压缩适用范围，输入证据保留契约（not ok / Error / assertion 逐字保留）
+> 由机械自检保证，任一条缺失即整次折叠失效回退 Native。

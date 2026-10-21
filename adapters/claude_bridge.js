@@ -18,6 +18,11 @@ const { runUnifiedAfter } = require("./unified_runtime");
 const { createAutoCanaryObserver } = require("./claude_observer");
 const { createClaudeNativeObservability } = require("./claude_native_observability");
 const { createTerminalStateCompressor, classifyCommand } = require("../hooks/post_tool/terminal_state");
+// V1-D-ADV1 preregistered transport guard: the prefilter MUST call the SAME
+// frozen extractor module/API the policy hook runs (no copy, no fork, no
+// second eligibility logic - V1-D-ADV1-P0 prereg implementation contract §2).
+const { extractStructured, extractStructuredFromCarrier } = require("../hooks/post_tool/test_build_structured");
+const { performance } = require("perf_hooks");
 const {
   foldCommand,
   buildFingerprint,
@@ -220,6 +225,114 @@ function appendEvent(ev) {
     fs.mkdirSync(path.dirname(f), { recursive: true });
     fs.appendFileSync(f, `${JSON.stringify(ev)}\n`, "utf8");
   } catch (_e) {}
+}
+
+// ---------------------------------------------------------------------------
+// V1-D-ADV1 eligibility-prefiltered transport guard (experiment, default OFF).
+// Prereg (frozen): evidence/V1/V1-D-ADV1-STANDARD-RUNNER-ADOPTION-PREREG.md.
+// CODE_GUARD_ADV1_TRANSPORT=1 adds exactly ONE transport decision: a shell
+// test/build/check output >= 3000 chars that the terminal leg declined may
+// enter the EXISTING full policy path iff the frozen extractStructured
+// prefilter already judges it eligible. The prefilter reuses the same frozen
+// module/API and input derivation as the full-policy quick_shell branch, and
+// fail-closes when the CODE_GUARD_TEST_BUILD_STRUCTURED kill-switch is active.
+// Flag OFF (unset or any other value) keeps byte-identical GA behavior and
+// emits zero ADV1 telemetry.
+// ---------------------------------------------------------------------------
+const ADV1_KINDS = ["test", "build", "check"];
+const ADV1_MIN_CHARS = 3000; // frozen size gate = policy hook SHELL_FORCE_SUMMARY_CHARS
+
+function adv1TelemetryFile() {
+  const base = process.env.CODE_GUARD_BASE_DIR || path.join(process.cwd(), ".code-guard");
+  return path.join(base, "context_budget", "adv1_transport_guard.ndjson");
+}
+
+function appendAdv1Event(ev) {
+  try {
+    const f = adv1TelemetryFile();
+    fs.mkdirSync(path.dirname(f), { recursive: true });
+    fs.appendFileSync(f, `${JSON.stringify(ev)}\n`, "utf8");
+  } catch (_e) {} // fail-open: observability never blocks delivery
+}
+
+// Evaluate the preregistered guard for one terminal-leg declined shell event.
+// Final flag contract (v1.0.0 publication decision: default OFF — the guard is
+// opt-in; no ADV1 transport decision unless the operator explicitly enables it):
+//   CODE_GUARD_ADV1_TRANSPORT unset -> OFF (publication default; byte-identical
+//                                      GA transport, zero ADV1 telemetry)
+//   "1"                             -> ON (explicit opt-in only)
+//   "0"                             -> OFF kill-switch (v0.9 GA transport
+//                                      semantics restored: the guard is inert,
+//                                      the terminal decline path stays
+//                                      byte-identical GA)
+//   any other value                 -> OFF (legacy semantics kept, not extended)
+// Returns null when OFF (no evaluation, no telemetry); otherwise returns
+// { routed, extraction } and appends one telemetry row describing the
+// evaluation (cheap gates, prefilter result, per-call runtime).
+function evaluateAdv1TransportGuard({ sessionId, toolName, text, command }) {
+  const adv1Flag = process.env.CODE_GUARD_ADV1_TRANSPORT;
+  const adv1Enabled = adv1Flag === "1";
+  if (!adv1Enabled) return null;
+  const isShell = toolName === "run_shell_command";
+  const commandText = String(command || "");
+  const kind = isShell ? classifyCommand(commandText) : null;
+  const kindOk = kind !== null && ADV1_KINDS.includes(kind);
+  const textChars = typeof text === "string" ? text.length : 0;
+  const sizeOk = textChars >= ADV1_MIN_CHARS;
+  const killSwitch = process.env.CODE_GUARD_TEST_BUILD_STRUCTURED === "0";
+  const row = {
+    event: "adv1_transport_guard",
+    sessionId,
+    tool: toolName,
+    command: commandText.slice(0, 200),
+    chars: textChars,
+    kind,
+    gates: {
+      flag: true,
+      shell: isShell,
+      command_class_ok: kindOk,
+      size_ok: sizeOk,
+      kill_switch_active: killSwitch,
+    },
+    extractor_called: false,
+    prefilter_eligible: null,
+    prefilter_reason: null,
+    prefilter_morphology: null,
+    prefilter_saving: null,
+    extractor_runtime_ms: null,
+    bytes_inspected: null,
+    routed: false,
+    at: new Date().toISOString(),
+  };
+  let extraction = null;
+  if (killSwitch) {
+    row.prefilter_reason = "kill_switch_fail_closed";
+  } else if (!isShell) {
+    row.prefilter_reason = "not_shell";
+  } else if (!kindOk) {
+    row.prefilter_reason = "command_not_test_build_check";
+  } else if (!sizeOk) {
+    row.prefilter_reason = "below_frozen_size_gate";
+  } else {
+    // Frozen prefilter: same pure functions, same input derivation as the
+    // full-policy quick_shell branch (toolText + extractCommand(payload)).
+    const t0 = performance.now();
+    extraction =
+      text.indexOf("[TASCO_FAILURE_CARRIER") !== -1
+        ? extractStructuredFromCarrier(text, commandText)
+        : extractStructured(text, commandText);
+    row.extractor_runtime_ms = +(performance.now() - t0).toFixed(3);
+    row.extractor_called = true;
+    row.bytes_inspected = Buffer.byteLength(text, "utf8");
+    row.prefilter_eligible = Boolean(extraction && extraction.eligible);
+    row.prefilter_reason = extraction ? extraction.reason : "extractor_exception";
+    row.prefilter_morphology =
+      extraction && Array.isArray(extraction.morphology) ? extraction.morphology : null;
+    row.prefilter_saving = extraction && extraction.stats ? extraction.stats.saving : null;
+    row.routed = row.prefilter_eligible === true;
+  }
+  appendAdv1Event(row);
+  return { routed: row.routed, extraction };
 }
 
 function handlePreToolUse(event) {
@@ -943,6 +1056,107 @@ function handlePostToolUse(event) {
         appendArbitration("terminal_state_success");
         return deliveredEnvelope(response, adoptedOutput);
       }
+    }
+    // V1-D-ADV1 preregistered transport guard (experiment flag, default OFF).
+    // Reachable ONLY after the terminal consult declined, so existing terminal
+    // precedence is untouched; Zone A (rule 6) / Zone B (carrier) events never
+    // reach this leg (they select diagnostic_semantic upstream). When routed,
+    // the event is consulted through the EXISTING full policy path with the
+    // same env as the diagnostic leg; the frozen policy winner logic (V1-D
+    // quick_shell / terminal / carrier / native) and the shared adoption gate
+    // then decide. Flag OFF -> evaluateAdv1TransportGuard returns null and
+    // nothing below runs (byte-identical GA).
+    const adv1 = evaluateAdv1TransportGuard({
+      sessionId,
+      toolName: payload.tool_name,
+      text,
+      command: semanticCommand || (input.tool_input && input.tool_input.command),
+    });
+    if (adv1 && adv1.routed) {
+      let adv1Run = null;
+      try {
+        adv1Run = runUnifiedAfter(
+          hookInput,
+          { tool_response: text },
+          { directory: cwd },
+          { hookDir: process.env.CODE_GUARD_HOOK_DIR, agent: AGENT_CLAUDE_CODE }
+        );
+      } catch (_e) {
+        adv1Run = null; // fail-open -> existing native fallback below
+      }
+      const adv1Updated =
+        adv1Run &&
+        adv1Run.hookSpecificOutput &&
+        adv1Run.hookSpecificOutput.updatedToolOutput;
+      const adv1Compressed = extractText(adv1Updated);
+      if (adv1Compressed) {
+        const adv1Guard = shouldAdoptCompression({
+          originalLength: text.length,
+          compressedLength: adv1Compressed.length,
+          originalText: text,
+          compressedText: adv1Compressed,
+        });
+        const adv1Rescue = rescueCompression({
+          raw: text,
+          compressed: adv1Compressed,
+          guard: adv1Guard,
+          minCoverage: 0.5,
+        });
+        if (adv1Rescue.adopted) {
+          const adv1Output = adv1Rescue.output || adv1Compressed;
+          const adv1Arb = arbitrate({
+            candidates: [
+              {
+                id: "diagnostic_semantic",
+                eligible: true,
+                reason: "adv1_transport_guard_routed",
+                evidence: { transport_guard: "adv1" },
+              },
+            ],
+            fallbackReason: "no_eligible_capability",
+          });
+          appendEvent({
+            type: "compression",
+            sessionId,
+            toolName: obs.tool,
+            tool_family: obs.family,
+            capability: "diagnostic_semantic",
+            transport_guard: "adv1",
+            originalLength: text.length,
+            compressedLength: adv1Output.length,
+            ratio: text.length ? adv1Output.length / text.length : null,
+            tokenReduction: text.length ? 1 - adv1Output.length / text.length : null,
+            coverage: adv1Guard.coverage,
+            confidence: adv1Guard.confidence,
+            rescued: Boolean(adv1Rescue.output),
+            transport_replacement_emitted: true,
+            at: new Date().toISOString(),
+          });
+          appendArbitration("diagnostic_semantic", null, adv1Arb);
+          appendAdv1Event({
+            event: "adv1_transport_delivery",
+            sessionId,
+            routed: true,
+            delivered: "applied",
+            delivered_chars: adv1Output.length,
+            winner: "diagnostic_semantic",
+            double_apply_count: 0,
+            at: new Date().toISOString(),
+          });
+          return deliveredEnvelope(response, adv1Output);
+        }
+      }
+      appendAdv1Event({
+        event: "adv1_transport_delivery",
+        sessionId,
+        routed: true,
+        delivered: "declined",
+        delivered_chars: null,
+        winner: null,
+        double_apply_count: 0,
+        at: new Date().toISOString(),
+      });
+      // fall through: full policy judged native/fallback -> existing native path
     }
     // policy hook judged native/fallback for this output -> record native.
     createClaudeNativeObservability().recordNative({

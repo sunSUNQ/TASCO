@@ -1,27 +1,26 @@
 ﻿# TASCO — 面向 Code Agent 的选择性上下文优化（工具发布仓库）
 **TASCO**（**T**ask-**A**ware **S**elective **C**ontext **O**ptimization，任务感知选择性上下文优化）是一个面向 Code Agent 的选择性上下文优化运行时，
-目标是在**保证任务成功率、结果正确性和仓库健康度不退化**的前提下，通过任务感知
+目标是在**以任务成功率、结果正确性和仓库健康度不退化作为准入门槛**的前提下，通过任务感知
 的选择性介入，降低 Code Agent 执行过程中的输入、输出、缓存 Token 以及不必要的
 工具调用和探索轮次。它**不是通用 summarizer**：是否优化、何时优化由证据形态决定，
 其余场景**默认保持 Native（原生执行）**。
 本仓 = TASCO 的**产品发布仓**（deploy 闭包镜像到 root）。当前发布内容 =
-**tasco-v1.0.0** 资格化闭包（Release Qualified / Pending Release Approval）：
-142 payload / 146 package，由确定性生成器产出，`deploy_manifest.json` 内含全部
-文件 SHA256，可离线校验完整性。
+**tasco-v1.0.0** 最终稳定发布（Feature Development Frozen · Maintenance Only）：
+deploy 闭包由确定性生成器产出，`deploy_manifest.json` 内含全部 payload 文件的
+SHA256，可离线校验完整性。
 
-## 当前版本：tasco-v0.8-rc2
+## 当前版本：tasco-v1.0.0
 
 ```text
 发布内容
-└─ deploy 闭包（142 payload，sourceCommit 34b858e8 构建树）
-   Existing-Line Evidence Closure：7/7 evidence lines resolved
-   （6 CLOSED + 1 CLOSED-BOUNDED，11 units，registry 948 runs，F0=0）
+└─ tasco-v1.0.0 最终稳定发布（tag tasco-v1.0.0）
    默认 AUTO（runner 默认开启）：Diagnostic / Terminal-State /
    Validation Delta / Failure Carrier / Search Guidance（跨仓）/ Read R1-R5
    默认关：Search Result Compression（operator flag）；Structural Context =
-   frozen Native by design
+   frozen Native by design；ADV1 Transport Guard（opt-in，显式 =1 开启）
 
 历史发布
+├─ tasco-v0.8-rc2  Existing-Line 7/7 收口 + Release Qualification
 ├─ tasco-v0.7  Validation Coverage Expansion（M-V3 验证语义身份 + Search
 │              Compression bridge 集成）
 ├─ tasco-v0.6  Read R1-R5 任务驱动读取压缩默认 AUTO
@@ -49,6 +48,13 @@
 > 家族口径：前四行任务输出能力 = **一个 Task Output Compression 家族下的 4 种
 > 互斥策略**（一次工具输出至多一次内容变换）。全部能力归纳为
 > **3 大类 / 6 家族 / 7 条证据线路**（任务输出 4 + Read 2 + Search 1）。
+
+> **Test/Build Structured 不是独立能力**：它是 `quick_shell` 诊断 winner 分支在
+> 仲裁**之前**对 test/build/check 输出做的一次**输入预处理**（P1–P5 重复结构折叠），
+> 折叠后的文本只被既有的诊断 winner 消费，本身**从不产生新的 Compression Winner**，
+> 也不扩大默认压缩适用范围。默认 ON（runner 默认开启），输入证据保留契约不变
+> （每条 `not ok` 行、首条 `Error:` 行、每条 assertion 行逐字保留）；可用
+> `CODE_GUARD_TEST_BUILD_STRUCTURED=0` 显式关闭（回到 legacy quick_shell 语义）。
 
 # 安装
 
@@ -102,6 +108,7 @@ $env:CODE_GUARD_FAILURE_CARRIER_AUTO = "0"            # 可选：关闭 Failure 
 $env:CODE_GUARD_SEARCH_GUIDANCE = "0"                 # 可选：关闭精准代码搜索
 $env:CODE_GUARD_SEARCH_GUIDANCE_AUTO = "0"            # 可选：只关闭跨仓泛化（回到白名单模式）
 $env:CODE_GUARD_READ_COMPRESSION = "0"                # 可选：Read R1-R5 全 Native
+$env:CODE_GUARD_TEST_BUILD_STRUCTURED = "0"           # 可选：关闭 Test/Build Structured 输入预处理（回到 legacy quick_shell）
 $env:CODE_GUARD_STRUCTURED_SEARCH = "1"               # 可选：启用 Search Result Compression（默认关）
 ```
 
@@ -124,6 +131,7 @@ $env:CODE_GUARD_STRUCTURED_SEARCH = "1"               # 可选：启用 Search R
 | `CODE_GUARD_SEARCH_GUIDANCE_AUTO` | 跨仓泛化模式（仓库白名单不再参与 eligibility） | runner 默认 `1`；显式 `0` 回到白名单模式 |
 | `CODE_GUARD_SEARCH_GUIDANCE_PILOTS` | 试点仓白名单（仅未开 AUTO 时生效） | `fastify`（兼容保留） |
 | `CODE_GUARD_READ_COMPRESSION` | Read R1-R5 读取压缩（R2/R3 另需 identity map） | runner 默认 `1`；显式 `0` 全 Native |
+| `CODE_GUARD_TEST_BUILD_STRUCTURED` | Test/Build Structured 输入预处理（P1–P5 重复结构折叠；非独立能力，只被 quick_shell 诊断 winner 消费） | runner 默认 `1`；显式 `0` 关闭（legacy quick_shell） |
 | `CODE_GUARD_STRUCTURED_SEARCH` | Search Result Compression（bridge grep 腿） | 默认关；显式 `1` 启用（operator flag） |
 
 ## 完整性校验
@@ -179,6 +187,17 @@ WIR / wrong_capability / double_apply / F0 全部为 0。
 | Read R1-R5 | R4 suppress median 96.5% / R3 94.5% / R5 58.7%；R2 15/15；R4 safety 24/24 零 wrong_suppression | CLOSED ×5 |
 | Structural Context | G1 静态资格门不可满足证明；结构替代 LCR 0.74 | frozen Native |
 
+> **口径提醒**：上表 `saving 91.9%` / `96.5%` 等为**局部压缩率**（单次工具输出折叠
+> 后的字符节省，非端到端收益）；**端到端净收益以 LCR 为准**（LCR = 启用后
+> `rtIO + 0.1·cacheRead` ÷ Native 同名项，<1 才是划算），TSR 为质量优先的门槛。
+
+**诚实记录的负收益与风险**（v1.0.0 收口结论，未隐瞒）：
+
+- 无损/可恢复的 RDS 折叠机制在线实测为**负收益**（+7.1%），旁路存储回灌**负收益**（+23.0%），
+  本轮不承诺其收益。
+- 部署的 M3 存在词面口径盲区：词面审计 24,648 视图通过但漏检 12 条语义诊断行
+  （G5 已确认）；修复设计未实施，属**已知诊断可见性风险**。
+
 逐能力试验细节见 [CAPABILITY-EVIDENCE.zh-CN.md](./CAPABILITY-EVIDENCE.zh-CN.md)。
 
 ## 冒烟与验收
@@ -201,9 +220,8 @@ cd examples\session-marker-smoke;              npm run smoke       # 会话标�
 - [x] v0.5：Terminal / Validation Delta / Failure Carrier 默认 AUTO + 统一仲裁冻结
 - [x] v0.6：Read R1-R5 任务驱动读取压缩默认 AUTO
 - [x] v0.7：Validation Coverage Expansion（M-V3 语义身份 + Search Compression 集成）
-- [x] v0.8-rc2：Existing-Line 7/7 收口 + Release Qualification（manifest 闭包修复）→ **Release Qualified / Pending Release Approval**
-- [ ] GA 审批 → tag `tasco-v0.8`
-- [ ] 1.0 能力扩展（研发线）：Diff/Patch → Git State/History → Dependency → Test/Build Structured → Trajectory Delta；北极星 = Task Compression Coverage@5% ≥ 80%
+- [x] v0.8-rc2：Existing-Line 7/7 收口 + Release Qualification（manifest 闭包修复）
+- [x] v1.0.0：最终稳定发布（tag `tasco-v1.0.0`；Feature Development Frozen · Maintenance Only）
 
 # License
 
@@ -218,6 +236,6 @@ cd examples\session-marker-smoke;              npm run smoke       # 会话标�
   author       = {TASCO contributors},
   year         = {2026},
   howpublished = {\url{https://github.com/sunSUNQ/TASCO}},
-  note         = {v0.8-rc2: 7/7 existing capability lines closed and frozen (large diagnostic, failure carrier, terminal state, validation delta, search guidance + compression, read R1-R5) under one frozen arbitration contract}
+  note         = {v1.0.0: 7/7 existing capability lines closed and frozen (large diagnostic, failure carrier, terminal state, validation delta, search guidance + compression, read R1-R5) under one frozen arbitration contract}
 }
 ```

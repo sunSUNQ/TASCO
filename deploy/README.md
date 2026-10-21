@@ -1,8 +1,8 @@
-# TASCO v0.5 — 选择性上下文压缩
+# TASCO v1.0.0 — 选择性上下文压缩
 
-**TASCO**（**T**ool-output **A**daptive **S**elective **C**ontext **O**ptimization）是面向 Code Agent 的**选择性上下文压缩工具**：对**已资格化的高容量、低决策密度诊断输出**做语义压缩，减少送入模型上下文的工具输出；**未命中已验证规则的输出默认保持 Native（原生执行）**。
+**TASCO**（**T**ask-**A**ware **S**elective **C**ontext **O**ptimization，任务感知选择性上下文优化）是面向 Code Agent 的**选择性上下文压缩工具**：对**已资格化的高容量、低决策密度诊断输出**做语义压缩，减少送入模型上下文的工具输出；**未命中已验证规则的输出默认保持 Native（原生执行）**。
 
-当前产品版（`tasco-v0.7`）有六条能力主线**默认自动开启**：**Diagnostic Semantic Compression（失败/诊断日志）**、**Terminal-State Success Compression（成功终态）**、**Validation Delta（重复验证只报变化）**、**Failure Carrier（真实失败自动进入诊断链）**、**精准代码搜索（DISCOVERY/FILTER 意图跨仓注入搜索收敛引导）**、**任务驱动 Read 压缩（R1 目标符号提取 / R2 调用关系边 / R3 实现链 / R4 重复读抑制 / R5 章节提取）**——每次输出只会有一个能力生效（冻结仲裁：失败诊断 > 稳定 VD > 成功终态 > Native；read_task_compression 只作用于 read_file 事件，与 shell 域候选天然互斥），且压缩结果经 model-visible 验证真实送达模型。各能力可用环境变量独立回滚（见「能力边界」表），未知/不安全场景一律 Native。
+当前产品版（`tasco-v1.0.0`）有六条能力主线**默认自动开启**：**Diagnostic Semantic Compression（失败/诊断日志）**、**Terminal-State Success Compression（成功终态）**、**Validation Delta（重复验证只报变化）**、**Failure Carrier（真实失败自动进入诊断链）**、**精准代码搜索（DISCOVERY/FILTER 意图跨仓注入搜索收敛引导）**、**任务驱动 Read 压缩（R1 目标符号提取 / R2 调用关系边 / R3 实现链 / R4 重复读抑制 / R5 章节提取）**——每次输出只会有一个能力生效（冻结仲裁：失败诊断 > 稳定 VD > 成功终态 > Native；read_task_compression 只作用于 read_file 事件，与 shell 域候选天然互斥），且压缩结果经 model-visible 验证真实送达模型。各能力可用环境变量独立回滚（见「能力边界」表），未知/不安全场景一律 Native。
 
 > 本目录（`deploy/`）是**自包含交付包**：整个目录复制到目标机即可部署，不需要研发仓、`npm install` 或 Python。
 
@@ -10,9 +10,9 @@
 
 | 文档 | 内容 | 什么时候看 |
 | --- | --- | --- |
-| [DEPLOYMENT-GUIDE.zh-CN.md](./DEPLOYMENT-GUIDE.zh-CN.md) | **部署操作手册**：新机要求 → 放包 → CodeAgentCLI 授权 → 验收 4 步 → 常驻接线 → 卸载 → FAQ | 拿到包在新机器上装好并验收，**只读这一份就够** |
-| [RUNNER-OBSERVABILITY-GUIDE.zh-CN.md](./RUNNER-OBSERVABILITY-GUIDE.zh-CN.md) | 运行与观测：runner 全部参数、观测脚本输出解读、错误代码、能力边界 | 日常跑任务/读结论/排障时查阅 |
-| [CAPABILITY-EVIDENCE.zh-CN.md](./CAPABILITY-EVIDENCE.zh-CN.md) | 能力试验佐证：已开启能力的发布依据 + 其余能力验证进度 | 想了解“凭什么只开 Diagnostic、其它能力到哪一步了”时查阅 |
+| [DEPLOYMENT-GUIDE.zh-CN.md](../DEPLOYMENT-GUIDE.zh-CN.md) | **部署操作手册**：新机要求 → 放包 → CodeAgentCLI 授权 → 验收 4 步 → 常驻接线 → 卸载 → FAQ | 拿到包在新机器上装好并验收，**只读这一份就够** |
+| [RUNNER-OBSERVABILITY-GUIDE.zh-CN.md](../RUNNER-OBSERVABILITY-GUIDE.zh-CN.md) | 运行与观测：runner 全部参数、观测脚本输出解读、错误代码、能力边界 | 日常跑任务/读结论/排障时查阅 |
+| [CAPABILITY-EVIDENCE.zh-CN.md](../CAPABILITY-EVIDENCE.zh-CN.md) | 能力试验佐证：已开启能力的发布依据 + 其余能力验证进度 | 想了解“凭什么只开 Diagnostic、其它能力到哪一步了”时查阅 |
 | 本文件 | 总览：TASCO 是什么、能力边界、包内结构 | 先了解再动手 |
 
 安装部署请直接进入 **DEPLOYMENT-GUIDE.zh-CN.md**（放包 → 授权 → 4 步验收：预检 → 冒烟 → 两个观测脚本读结果，约 10 分钟完成）。
@@ -26,7 +26,7 @@ cd D:\tasco\examples\diagnostic-compression-smoke
 codeagentcli      # 交互模式启动；出现“允许访问此目录”询问时选允许，然后退出
 ```
 
-每个新项目目录第一次使用前都要做一次；换用 Claude Code（`-Agent claude`）则无此步骤。完整验收流程见 [DEPLOYMENT-GUIDE.zh-CN.md](./DEPLOYMENT-GUIDE.zh-CN.md)。
+每个新项目目录第一次使用前都要做一次；换用 Claude Code（`-Agent claude`）则无此步骤。完整验收流程见 [DEPLOYMENT-GUIDE.zh-CN.md](../DEPLOYMENT-GUIDE.zh-CN.md)。
 
 ## 能力边界（哪些会压缩、哪些保持 Native）
 
@@ -47,7 +47,7 @@ codeagentcli      # 交互模式启动；出现“允许访问此目录”询问
 `double_apply_count` 恒为 0；多种机会同时出现时由证据（`original_exit_code`、fingerprint 可比性、
 终态 classifier）决定 winner，与执行顺序无关。
 
-安全设计：默认 Native；fail-open（任何异常回退原生，不阻断 Agent）；压缩模型由 Agent 内部路由，**无外部 API 凭据配置**。成熟度细节见 [RUNNER-OBSERVABILITY-GUIDE.zh-CN.md](./RUNNER-OBSERVABILITY-GUIDE.zh-CN.md)「能力边界」，发布依据与试验数据见 [CAPABILITY-EVIDENCE.zh-CN.md](./CAPABILITY-EVIDENCE.zh-CN.md)。
+安全设计：默认 Native；fail-open（任何异常回退原生，不阻断 Agent）；压缩模型由 Agent 内部路由，**无外部 API 凭据配置**。成熟度细节见 [RUNNER-OBSERVABILITY-GUIDE.zh-CN.md](../RUNNER-OBSERVABILITY-GUIDE.zh-CN.md)「能力边界」，发布依据与试验数据见 [CAPABILITY-EVIDENCE.zh-CN.md](../CAPABILITY-EVIDENCE.zh-CN.md)。
 
 ## 五条主线冒烟（examples/，离线、无模型）
 
@@ -77,7 +77,7 @@ cd D:\tasco\examples\read-compression-smoke;            npm run smoke
 六线合起来的一句话：**失败时只看根因，第一次成功只看结果，重复验证只看变化，
 搜索时自动缩小范围，读取时只看任务要的部分、重复的不重发；多种机会同时出现时
 系统自动只选一种，不确定时保持原始结果。**
-索引见 [examples/README.md](./examples/README.md)。
+索引见 [examples/README.md](../examples/README.md)。
 
 ## 目录结构
 
@@ -118,7 +118,7 @@ deploy/
 └─ requirements.txt                 # 历史 RLM 路径的 Python 依赖（默认体验不需要）
 ```
 
-五层职责：**Skill/Spec** 只做行为引导，**Core** 只做「该不该压缩」判定，**Hook** 只做压缩执行，**Adapter** 只做 Agent 协议接线，**tools/** 只做运维观测。改动冻结目录（`core/`、`hooks/`、`adapters/`、`config/`）会破坏 `deploy_manifest.json` 完整性校验；`examples/` 冒烟 fixture 属于验证辅助，不在 payload 清单内（当前 manifest `tasco-v0.7` 为 123 个 payload 文件、127 个 package 文件 + SHA256，目标机可离线校验）。
+五层职责：**Skill/Spec** 只做行为引导，**Core** 只做「该不该压缩」判定，**Hook** 只做压缩执行，**Adapter** 只做 Agent 协议接线，**tools/** 只做运维观测。改动冻结目录（`core/`、`hooks/`、`adapters/`、`config/`）会破坏 `deploy_manifest.json` 完整性校验；`examples/` 冒烟 fixture 属于验证辅助，不在 payload 清单内（当前 manifest `tasco-v1.0.0`，payload 文件数见 `deploy_manifest.json`，含全部 SHA256，目标机可离线校验）。
 
 ## 三层能力结构：specs / skills / hooks
 
@@ -150,8 +150,8 @@ context_budget\claude_auto_canary.jsonl   # 每次压缩判定事件（selected/
 
 ## 环境变量与配置
 
-**默认零配置**：runner（`run-tasco-task.ps1`）自动注入运行所需全部变量并在结束前清理。只有「常驻接入」（手动把 hook 写进 Agent settings）需要设一个变量：`CODE_GUARD_HOOK_DIR` 指向本包 `hooks/`。完整参考见 [DEPLOYMENT-GUIDE.zh-CN.md](./DEPLOYMENT-GUIDE.zh-CN.md) 第 5 节。
+**默认零配置**：runner（`run-tasco-task.ps1`）自动注入运行所需全部变量并在结束前清理。只有「常驻接入」（手动把 hook 写进 Agent settings）需要设一个变量：`CODE_GUARD_HOOK_DIR` 指向本包 `hooks/`。完整参考见 [DEPLOYMENT-GUIDE.zh-CN.md](../DEPLOYMENT-GUIDE.zh-CN.md) 第 5 节。
 
 ## License
 
-本包暂未指定开源许可证；正式发布前请与维护者确认。
+[MIT](../LICENSE) — Copyright (c) 2026 sunSUNQ (TASCO contributors)
