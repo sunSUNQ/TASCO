@@ -196,7 +196,7 @@ test("delta: length guard rejects tiny raw outputs", () => {
 
 test("realistic TAP44 fixture parses and yields unchanged delta against itself", () => {
   const tap44 = fs.readFileSync(
-    path.join(__dirname, "..", "..", "..", "docs", "experiments", "workflow-compression", "p0-agent-ab", "qualification", "fixtures", "f1-tap-44pass.out"),
+    path.join(__dirname, "..", "..", "fixtures", "f1-tap-44pass.out"),
     "utf8"
   );
   assert.equal(extractCounts(tap44).pass, 44);

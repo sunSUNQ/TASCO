@@ -26,6 +26,18 @@ $workCandidate = Resolve-Path -LiteralPath $WorkDir -ErrorAction SilentlyContinu
 if (-not $workCandidate -or -not (Test-Path -LiteralPath $WorkDir -PathType Container)) { throw "[TASCO_E_WORKDIR_NOT_FOUND] WorkDir does not exist: $WorkDir`n建议: 传入实际项目根目录。" }
 $workRoot = $workCandidate.Path
 if (-not (Test-Path -LiteralPath (Join-Path $deployRoot "hooks"))) { throw "[TASCO_E_DEPLOY_INCOMPLETE] Missing TASCO hooks under $deployRoot`n建议: 使用完整 deploy 目录，不要单独复制 runner。" }
+# Release identity is read from the shipped deploy_manifest.json (releaseTag /
+# version), never hard-coded. Explicit -TascoVersion / CODE_GUARD_TASCO_VERSION
+# still overrides.
+$releaseVersion = "tasco-v1.0.0"
+$manifestPath = Join-Path $deployRoot "deploy_manifest.json"
+if (Test-Path -LiteralPath $manifestPath) {
+  try {
+    $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($manifest.releaseTag) { $releaseVersion = [string]$manifest.releaseTag }
+    elseif ($manifest.version) { $releaseVersion = [string]$manifest.version }
+  } catch { }
+}
 if ($Agent -eq "claude" -and -not $ClaudeCommand) { $ClaudeCommand = "claude" }
 if ($Agent -eq "codeagent" -and -not $CodeAgentCommand) {
   # Existing qualification used CODE_GUARD_CLAUDE_CMD for CodeAgentCLI; retain
@@ -146,7 +158,7 @@ try {
     $env:CODE_GUARD_CLAUDE_PROMPT = $Prompt
     if ($Agent -eq "opencode") { $env:CODE_GUARD_OPENCODE_MODEL = $OpenCodeModel }
     $env:CODE_GUARD_MODEL = if ($Agent -eq "opencode") { $OpenCodeModel } elseif ($Agent -eq "codeagent") { $env:CODE_GUARD_INTERNAL_MODEL } else { $Model }
-    $env:CODE_GUARD_TASCO_VERSION = if ($TascoVersion) { $TascoVersion } else { "tasco-v0.7" }
+    $env:CODE_GUARD_TASCO_VERSION = if ($TascoVersion) { $TascoVersion } else { $releaseVersion }
     # Terminal-State is enabled by default for standard TASCO sessions.
     # An explicit process-level 0 remains the Native rollback escape hatch;
     # A/B runners set their own arm environment independently.

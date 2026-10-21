@@ -18,7 +18,7 @@ const cp = require("child_process");
 
 const BRIDGE = path.join(__dirname, "claude_bridge.js");
 const TAP44 = fs.readFileSync(
-  path.join(__dirname, "..", "..", "docs", "experiments", "workflow-compression", "p0-agent-ab", "qualification", "fixtures", "f1-tap-44pass.out"),
+  path.join(__dirname, "..", "fixtures", "f1-tap-44pass.out"),
   "utf8"
 );
 

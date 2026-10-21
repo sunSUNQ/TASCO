@@ -15,6 +15,13 @@ const { createEditEvidence } = require("./post_tool/edit_evidence");
 const { createCompressor } = require("./post_tool/compressor");
 const { createStateRuntime } = require("./post_tool/state_runtime");
 const { createSummaries } = require("./post_tool/summaries");
+// V1-D1 Test/Build Structured Extraction (pre-arbitration input normalization;
+// frozen definition docs/architecture/V1-D1-PRIMITIVE-DEFINITION-V1.md).
+// v0.9 D-1 limited-auto product default: ENABLED when the env is unset;
+// CODE_GUARD_TEST_BUILD_STRUCTURED=0 = hard kill-switch (byte-identical
+// legacy); =1 = enabled. Any other explicit value keeps legacy semantics
+// (disabled). Eligibility P1-P5 unchanged.
+const testBuildStructured = require("./post_tool/test_build_structured.js");
 const { createTerminalStateCompressor } = require("./post_tool/terminal_state");
 const { createCompressionMetrics } = require("./post_tool/observability/compression_metrics");
 const { createSessionMetrics } = require("./post_tool/observability/session_metrics");
@@ -439,6 +446,23 @@ function main() {
   const toolName = extractToolName(payload);
   const toolText = extractToolText(payload, toolName);
   const rawChars = toolText.length;
+  // V0.11-D3-E5 RDS layer (frozen prereg 35c10393): env-gated pre-arbitration repeated-delivery suppression
+  const RDS_ON = process.env.CODE_GUARD_RDS === "1";
+  if (RDS_ON && toolText && toolText.length > 0) {
+    try {
+      const rds = require("./post_tool/repeated_delivery_suppression.js");
+      const rdsRes = rds.process(toolText);
+      if (rdsRes.compressed) {
+        metrics.noteCandidate("rds", rdsRes.text);
+        log(`rds compressed tool=${toolName} matched=${rdsRes.matched_chars} new=${rdsRes.new_chars} anchor=#${rdsRes.anchor_seq}`);
+        output(rdsRes.text, true);
+        process.exit(0);
+      }
+    } catch (_e) {
+      log(`rds failed, fallback to native chain: ${_e && _e.message}`);
+    }
+  }
+
   // Line-6：R4 guard 位置（read_file dedup 块）产生的一次性交付决策，
   // 供下方 read_file 主分支的策略腿消费。
   let readDecision = null;
@@ -955,9 +979,52 @@ function main() {
     }
 
     if (rawChars >= SHELL_FORCE_SUMMARY_CHARS || isHelperCommand || isShellSearch) {
+      // V1-D1 pre-arbitration input normalization (quick_shell winner branch
+      // only; folded text is consumed ONLY as this branch's summary input —
+      // native delivery paths are never handed a folded payload).
+      let tbText = toolText;
+      // v0.9 D-1 limited-auto default (product wiring, NOT a zone extension):
+      // unset -> enabled; "0" -> kill-switch; "1" -> enabled; any other
+      // explicit value keeps legacy semantics (disabled).
+      const tbFlag = process.env.CODE_GUARD_TEST_BUILD_STRUCTURED;
+      if ((tbFlag === undefined || tbFlag === "1") && !isShellSearch && !isHelperCommand) {
+        // V1-D2 W2: carrier reports route to the carrier-envelope aware entry
+        // (envelope contract lines are preserved verbatim; folded bodies feed
+        // the same winner branch). Plain reports keep the D1a path. Both are
+        // pre-arbitration input normalization for THIS winner branch only.
+        const isCarrierReport = toolText.indexOf("[TASCO_FAILURE_CARRIER") !== -1;
+        const tb = isCarrierReport
+          ? testBuildStructured.extractStructuredFromCarrier(toolText, command)
+          : testBuildStructured.extractStructured(toolText, command);
+        const tbEligible = Boolean(tb && tb.eligible);
+        if (tbEligible) tbText = tb.structuredText;
+        try {
+          const tbRow = {
+            event: "test_build_structured",
+            structured_candidate: true,
+            structured_applied: tbEligible,
+            structured_fold_count: tbEligible ? tb.stats.fold_count : 0,
+            structured_retained_evidence_count: tbEligible ? tb.stats.retained_evidence_count : 0,
+            structured_fallback_reason: tbEligible ? null : (tb ? tb.reason : "extractor_exception"),
+            raw_bytes: Buffer.byteLength(toolText, "utf8"),
+            folded_bytes: tbEligible ? Buffer.byteLength(tb.structuredText, "utf8") : null,
+            saving: tbEligible ? tb.stats.saving : null,
+            morphology: tbEligible ? tb.morphology : [],
+            wiring_path: isCarrierReport ? "carrier_diagnostic" : "quick_shell",
+            carrier_valid: isCarrierReport && tb && tb.carrier ? tb.carrier.valid : false,
+            command: String(command).slice(0, 200),
+          };
+          const tbPath = sessionPath("tasco_metrics/test_build_structured.ndjson");
+          fs.mkdirSync(path.dirname(tbPath), { recursive: true });
+          fs.appendFileSync(tbPath, JSON.stringify(tbRow) + "\n", "utf8");
+        } catch (_e) { /* fail-open: observability never blocks delivery */ }
+        if (tbEligible) {
+          log("test_build_structured fold applied raw=" + Buffer.byteLength(toolText, "utf8") + " folded=" + Buffer.byteLength(tb.structuredText, "utf8") + " patterns=" + tb.morphology.join("+"));
+        }
+      }
       const summary = isShellSearch
         ? quickShellSearchSummary(toolName, toolText)
-        : quickShellSummary(toolName, toolText);
+        : quickShellSummary(toolName, tbText);
 
       const finalContext = summary;
 

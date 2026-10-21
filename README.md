@@ -5,23 +5,22 @@
 工具调用和探索轮次。它**不是通用 summarizer**：是否优化、何时优化由证据形态决定，
 其余场景**默认保持 Native（原生执行）**。
 本仓 = TASCO 的**产品发布仓**（deploy 闭包镜像到 root）。当前发布内容 =
-**tasco-v1.0.0** 资格化闭包（Release Qualified / Pending Release Approval）：
-142 payload / 146 package，由确定性生成器产出，`deploy_manifest.json` 内含全部
-文件 SHA256，可离线校验完整性。
+**tasco-v1.0.0** 最终稳定发布（Feature Development Frozen · Maintenance Only）：
+deploy 闭包由确定性生成器产出，`deploy_manifest.json` 内含全部 payload 文件的
+SHA256，可离线校验完整性。
 
-## 当前版本：tasco-v0.8-rc2
+## 当前版本：tasco-v1.0.0
 
 ```text
 发布内容
-└─ deploy 闭包（142 payload，sourceCommit 34b858e8 构建树）
-   Existing-Line Evidence Closure：7/7 evidence lines resolved
-   （6 CLOSED + 1 CLOSED-BOUNDED，11 units，registry 948 runs，F0=0）
+└─ tasco-v1.0.0 最终稳定发布（tag tasco-v1.0.0）
    默认 AUTO（runner 默认开启）：Diagnostic / Terminal-State /
    Validation Delta / Failure Carrier / Search Guidance（跨仓）/ Read R1-R5
    默认关：Search Result Compression（operator flag）；Structural Context =
-   frozen Native by design
+   frozen Native by design；ADV1 Transport Guard（opt-in，显式 =1 开启）
 
 历史发布
+├─ tasco-v0.8-rc2  Existing-Line 7/7 收口 + Release Qualification
 ├─ tasco-v0.7  Validation Coverage Expansion（M-V3 验证语义身份 + Search
 │              Compression bridge 集成）
 ├─ tasco-v0.6  Read R1-R5 任务驱动读取压缩默认 AUTO
@@ -188,6 +187,17 @@ WIR / wrong_capability / double_apply / F0 全部为 0。
 | Read R1-R5 | R4 suppress median 96.5% / R3 94.5% / R5 58.7%；R2 15/15；R4 safety 24/24 零 wrong_suppression | CLOSED ×5 |
 | Structural Context | G1 静态资格门不可满足证明；结构替代 LCR 0.74 | frozen Native |
 
+> **口径提醒**：上表 `saving 91.9%` / `96.5%` 等为**局部压缩率**（单次工具输出折叠
+> 后的字符节省，非端到端收益）；**端到端净收益以 LCR 为准**（LCR = 启用后
+> `rtIO + 0.1·cacheRead` ÷ Native 同名项，<1 才是划算），TSR 为质量优先的门槛。
+
+**诚实记录的负收益与风险**（v1.0.0 收口结论，未隐瞒）：
+
+- 无损/可恢复的 RDS 折叠机制在线实测为**负收益**（+7.1%），旁路存储回灌**负收益**（+23.0%），
+  本轮不承诺其收益。
+- 部署的 M3 存在词面口径盲区：词面审计 24,648 视图通过但漏检 12 条语义诊断行
+  （G5 已确认）；修复设计未实施，属**已知诊断可见性风险**。
+
 逐能力试验细节见 [CAPABILITY-EVIDENCE.zh-CN.md](./CAPABILITY-EVIDENCE.zh-CN.md)。
 
 ## 冒烟与验收
@@ -210,9 +220,8 @@ cd examples\session-marker-smoke;              npm run smoke       # 会话标�
 - [x] v0.5：Terminal / Validation Delta / Failure Carrier 默认 AUTO + 统一仲裁冻结
 - [x] v0.6：Read R1-R5 任务驱动读取压缩默认 AUTO
 - [x] v0.7：Validation Coverage Expansion（M-V3 语义身份 + Search Compression 集成）
-- [x] v0.8-rc2：Existing-Line 7/7 收口 + Release Qualification（manifest 闭包修复）→ **Release Qualified / Pending Release Approval**
-- [ ] GA 审批 → tag `tasco-v0.8`
-- [ ] 1.0 能力扩展（研发线）：Diff/Patch → Git State/History → Dependency → Trajectory Delta；北极星 = Task Compression Coverage@5% ≥ 80%（Test/Build Structured 已作为内部输入预处理随本版交付，见「能力概览」附注，非独立 winner）
+- [x] v0.8-rc2：Existing-Line 7/7 收口 + Release Qualification（manifest 闭包修复）
+- [x] v1.0.0：最终稳定发布（tag `tasco-v1.0.0`；Feature Development Frozen · Maintenance Only）
 
 # License
 
@@ -227,6 +236,6 @@ cd examples\session-marker-smoke;              npm run smoke       # 会话标�
   author       = {TASCO contributors},
   year         = {2026},
   howpublished = {\url{https://github.com/sunSUNQ/TASCO}},
-  note         = {v0.8-rc2: 7/7 existing capability lines closed and frozen (large diagnostic, failure carrier, terminal state, validation delta, search guidance + compression, read R1-R5) under one frozen arbitration contract}
+  note         = {v1.0.0: 7/7 existing capability lines closed and frozen (large diagnostic, failure carrier, terminal state, validation delta, search guidance + compression, read R1-R5) under one frozen arbitration contract}
 }
 ```

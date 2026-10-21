@@ -139,6 +139,14 @@ function gitRev(args) {
   return r.stdout.trim();
 }
 
+// generatedAt must be a pure function of sourceCommit so that regenerating the
+// manifest from the same source commit yields byte-identical output (no wall
+// clock in the manifest). Derive it from the source commit's committer date.
+function commitDateIso(sha) {
+  const iso = gitRev(["show", "-s", "--format=%cI", `${sha}^{commit}`]);
+  return new Date(iso).toISOString().replace(/\.\d{3}Z$/, ".000Z");
+}
+
 function build(sourceCommit) {
   const payloadFiles = walkPayload();
   const payloadSet = new Set(payloadFiles);
@@ -171,7 +179,7 @@ function build(sourceCommit) {
     runtimeDependencies: old.runtimeDependencies,
     files: payloadFiles,
     sha256,
-    generatedAt: new Date().toISOString().replace(/\.\d{3}Z$/, ".000Z"),
+    generatedAt: commitDateIso(sourceCommit),
     capabilityOptions: old.capabilityOptions,
     payloadScope: old.payloadScope,
     smokeFixtures: old.smokeFixtures,
