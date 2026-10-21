@@ -5,15 +5,15 @@
 // transport guard (prereg evidence/V1/V1-D-ADV1-STANDARD-RUNNER-ADOPTION-
 // PREREG.md; implementation contract §1-§9).
 //
-// Frozen contract under test (v0.10 candidate-default wiring):
-//   unset / "1"                     -> ON: exactly ONE new transport decision:
+// Frozen contract under test (v1.0.0 default-OFF wiring):
+//   "1" (explicit opt-in)          -> ON: exactly ONE new transport decision:
 //     run_shell_command AND classifyCommand in {test,build,check} AND
 //     chars >= 3000 AND NOT already routed (Zone A rule-6 / Zone B carrier
 //     never reach the terminal leg) AND frozen extractStructured prefilter
 //     eligible -> consult the EXISTING full policy path (frozen winner logic,
 //     shared adoption gate) -> applied OR native.
-//   "0" (kill-switch) / other legacy -> OFF: byte-identical v0.9 GA behavior,
-//     zero ADV1 telemetry.
+//   unset / "0" (kill-switch) / other legacy -> OFF: byte-identical v0.9 GA
+//     behavior, zero ADV1 telemetry.
 //   arbitration: one transform per result, applied = diagnostic_semantic
 //     (existing winner, no fifth winner), double_apply_count = 0.
 //
@@ -173,9 +173,9 @@ test("ADV1 flag OFF values (kill-switch 0 / legacy other): eligible-shaped event
   }
 });
 
-test("ADV1 flag truth table: unset=ON, 1=ON, 0=OFF, legacy=OFF (candidate default contract)", () => {
+test("ADV1 flag truth table: unset=OFF, 1=ON, 0=OFF, legacy=OFF (published default contract)", () => {
   const table = [
-    { flag: undefined, expected: "ON" },
+    { flag: undefined, expected: "OFF" },
     { flag: "1", expected: "ON" },
     { flag: "0", expected: "OFF" },
     { flag: "legacy", expected: "OFF" },

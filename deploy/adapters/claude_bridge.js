@@ -256,10 +256,11 @@ function appendAdv1Event(ev) {
 }
 
 // Evaluate the preregistered guard for one terminal-leg declined shell event.
-// v0.10 candidate-default flag contract (D-1' analog; final verdict deferred
-// to the R4 default-ON vs OFF parity gate):
-//   CODE_GUARD_ADV1_TRANSPORT unset -> ON (candidate default)
-//   "1"                             -> ON
+// Final flag contract (v1.0.0 publication decision: default OFF — the guard is
+// opt-in; no ADV1 transport decision unless the operator explicitly enables it):
+//   CODE_GUARD_ADV1_TRANSPORT unset -> OFF (publication default; byte-identical
+//                                      GA transport, zero ADV1 telemetry)
+//   "1"                             -> ON (explicit opt-in only)
 //   "0"                             -> OFF kill-switch (v0.9 GA transport
 //                                      semantics restored: the guard is inert,
 //                                      the terminal decline path stays
@@ -270,7 +271,7 @@ function appendAdv1Event(ev) {
 // evaluation (cheap gates, prefilter result, per-call runtime).
 function evaluateAdv1TransportGuard({ sessionId, toolName, text, command }) {
   const adv1Flag = process.env.CODE_GUARD_ADV1_TRANSPORT;
-  const adv1Enabled = adv1Flag === undefined || adv1Flag === "1";
+  const adv1Enabled = adv1Flag === "1";
   if (!adv1Enabled) return null;
   const isShell = toolName === "run_shell_command";
   const commandText = String(command || "");

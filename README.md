@@ -50,6 +50,13 @@
 > 互斥策略**（一次工具输出至多一次内容变换）。全部能力归纳为
 > **3 大类 / 6 家族 / 7 条证据线路**（任务输出 4 + Read 2 + Search 1）。
 
+> **Test/Build Structured 不是独立能力**：它是 `quick_shell` 诊断 winner 分支在
+> 仲裁**之前**对 test/build/check 输出做的一次**输入预处理**（P1–P5 重复结构折叠），
+> 折叠后的文本只被既有的诊断 winner 消费，本身**从不产生新的 Compression Winner**，
+> 也不扩大默认压缩适用范围。默认 ON（runner 默认开启），输入证据保留契约不变
+> （每条 `not ok` 行、首条 `Error:` 行、每条 assertion 行逐字保留）；可用
+> `CODE_GUARD_TEST_BUILD_STRUCTURED=0` 显式关闭（回到 legacy quick_shell 语义）。
+
 # 安装
 
 ## 环境要求
@@ -102,6 +109,7 @@ $env:CODE_GUARD_FAILURE_CARRIER_AUTO = "0"            # 可选：关闭 Failure 
 $env:CODE_GUARD_SEARCH_GUIDANCE = "0"                 # 可选：关闭精准代码搜索
 $env:CODE_GUARD_SEARCH_GUIDANCE_AUTO = "0"            # 可选：只关闭跨仓泛化（回到白名单模式）
 $env:CODE_GUARD_READ_COMPRESSION = "0"                # 可选：Read R1-R5 全 Native
+$env:CODE_GUARD_TEST_BUILD_STRUCTURED = "0"           # 可选：关闭 Test/Build Structured 输入预处理（回到 legacy quick_shell）
 $env:CODE_GUARD_STRUCTURED_SEARCH = "1"               # 可选：启用 Search Result Compression（默认关）
 ```
 
@@ -124,6 +132,7 @@ $env:CODE_GUARD_STRUCTURED_SEARCH = "1"               # 可选：启用 Search R
 | `CODE_GUARD_SEARCH_GUIDANCE_AUTO` | 跨仓泛化模式（仓库白名单不再参与 eligibility） | runner 默认 `1`；显式 `0` 回到白名单模式 |
 | `CODE_GUARD_SEARCH_GUIDANCE_PILOTS` | 试点仓白名单（仅未开 AUTO 时生效） | `fastify`（兼容保留） |
 | `CODE_GUARD_READ_COMPRESSION` | Read R1-R5 读取压缩（R2/R3 另需 identity map） | runner 默认 `1`；显式 `0` 全 Native |
+| `CODE_GUARD_TEST_BUILD_STRUCTURED` | Test/Build Structured 输入预处理（P1–P5 重复结构折叠；非独立能力，只被 quick_shell 诊断 winner 消费） | runner 默认 `1`；显式 `0` 关闭（legacy quick_shell） |
 | `CODE_GUARD_STRUCTURED_SEARCH` | Search Result Compression（bridge grep 腿） | 默认关；显式 `1` 启用（operator flag） |
 
 ## 完整性校验
@@ -203,7 +212,7 @@ cd examples\session-marker-smoke;              npm run smoke       # 会话标�
 - [x] v0.7：Validation Coverage Expansion（M-V3 语义身份 + Search Compression 集成）
 - [x] v0.8-rc2：Existing-Line 7/7 收口 + Release Qualification（manifest 闭包修复）→ **Release Qualified / Pending Release Approval**
 - [ ] GA 审批 → tag `tasco-v0.8`
-- [ ] 1.0 能力扩展（研发线）：Diff/Patch → Git State/History → Dependency → Test/Build Structured → Trajectory Delta；北极星 = Task Compression Coverage@5% ≥ 80%
+- [ ] 1.0 能力扩展（研发线）：Diff/Patch → Git State/History → Dependency → Trajectory Delta；北极星 = Task Compression Coverage@5% ≥ 80%（Test/Build Structured 已作为内部输入预处理随本版交付，见「能力概览」附注，非独立 winner）
 
 # License
 

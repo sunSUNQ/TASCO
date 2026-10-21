@@ -158,8 +158,15 @@ Token 节省  : gross=5619 recovery=0 net=5619 mode=estimated_from_telemetry
 | 精准代码搜索（⑤，Line-5） | **AUTO（runner 默认）** | DISCOVERY/FILTER 意图正区（调用链入口、wrapper→实现、依赖定位、symbol 消歧）跨仓注入搜索收敛引导 | LOOKUP（找定义）、枚举、统计、未知意图 → Native | `CODE_GUARD_SEARCH_GUIDANCE=0`（全关）/ `CODE_GUARD_SEARCH_GUIDANCE_AUTO=0`（回到白名单模式） |
 | 任务驱动 Read 压缩（⑥，Line-6） | **AUTO（runner 默认）** | 任务派生的读取：R1 目标符号提取（95%+）、R2 调用关系边、R3 实现链、R4 重复读抑制、R5 章节提取；全部 model-visible | 无法分类（R0）、无任务符号/map、无净节省、非入口文件读取、小读取 → Native | `CODE_GUARD_READ_COMPRESSION=0`（读全 Native）/ `CODE_GUARD_READ_MAP_AUTOBUILD=0`（关闭 map 按需生成，缺 map 仓 R2/R3 → Native） |
 | Structural / Search Result | Native / Shadow | —（边界已冻结，未达默认开启门槛） | 一切默认原生 | — |
+| Test/Build Structured（**输入预处理**，非独立能力） | **AUTO（runner 默认）** | test/build/check 输出的 P1–P5 重复结构折叠，折叠文本只被 quick_shell 诊断 winner 消费；证据保留契约逐字不变 | 非 test/build 输出、无重复结构、折叠无节省 → Native | `CODE_GUARD_TEST_BUILD_STRUCTURED=0`（回到 legacy quick_shell） |
 
 统一仲裁（冻结 precedence）：**失败诊断 > 稳定 Validation Delta > 成功终态 > Native**
 ——一次输出只有一个 winner，`double_apply_count` 恒为 0；失败语义只看
 `original_exit_code`（Failure Carrier 契约），与 wrapper 进程 exit=0 严格分离。
 不要用环境变量强行扩大未达门槛的能力——默认 Native 与显式回滚是安全设计的一部分。
+
+> Test/Build Structured 是**仲裁之前的输入预处理**，不是仲裁候选，因此**不产生新的
+> Compression Winner**：它把重复结构折叠为占位计数，折叠文本只被 `quick_shell`
+> 诊断 winner 消费；若仲裁保持 Native，折叠文本永不交付（原始输出继续原样返回）。
+> 此机制不扩大默认压缩适用范围，输入证据保留契约（not ok / Error / assertion 逐字保留）
+> 由机械自检保证，任一条缺失即整次折叠失效回退 Native。
