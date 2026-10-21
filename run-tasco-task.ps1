@@ -29,7 +29,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $deployRoot "hooks"))) { throw "[TAS
 # Release identity is read from the shipped deploy_manifest.json (releaseTag /
 # version), never hard-coded. Explicit -TascoVersion / CODE_GUARD_TASCO_VERSION
 # still overrides.
-$releaseVersion = "tasco-v1.0.0"
+$releaseVersion = "tasco-v1.0.2"
 $manifestPath = Join-Path $deployRoot "deploy_manifest.json"
 if (Test-Path -LiteralPath $manifestPath) {
   try {
