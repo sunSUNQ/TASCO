@@ -426,23 +426,26 @@ function looksLikeEditSucceeded(payload) {
   );
 }
 
-// P0 repair: model-visible diagnostic fidelity gate for shell summaries.
-// Records fidelity state (pass/fail) and actual delivery (native/compressed)
-// separately. Returns { proceed } — when false the caller must `output()` native.
+// P0 repair (R2): model-visible diagnostic fidelity gate for shell summaries.
+// Three-state classification: no_risk -> proceed; facts_identified -> verify,
+// fall back to native on any missing fact; uncertain -> native. Fidelity state
+// and actual delivery are recorded separately; `rescued` is independent of the
+// fidelity verdict and must not be read as "fidelity passed".
 function fidelityGate(toolName, toolText, summary, reasonLabel) {
   const fidelity = verifyDiagnosticFidelity(toolText, summary);
-  if (fidelity.gate === "not_applicable") {
-    return { proceed: true, fidelity };
-  }
+  const proceed = fidelity.gate !== "fail"; // no_risk | pass -> proceed; fail -> native
   const row = {
     event: "diagnostic_fidelity",
     tool: toolName,
     reason: reasonLabel,
-    gate: fidelity.gate,
+    diagnostic_risk_state: fidelity.state,
+    fidelity_verdict: fidelity.verdict,
+    fallback_reason: fidelity.gate === "fail" ? fidelity.verdict : null,
+    actual_delivery: proceed ? "compressed" : "native",
+    rescued: null, // adapter-level evidence footer; NOT equivalent to fidelity pass
     critical_fact_count: fidelity.facts.length,
     missing_fact_count: fidelity.missing.length,
     missing_facts: fidelity.missing.map((m) => ({ type: m.type, line: m.line })),
-    actual_delivery: fidelity.gate === "fail" ? "native" : "compressed",
     raw_chars: String(toolText || "").length,
     compressed_chars: String(summary || "").length,
     at: new Date().toISOString(),
@@ -455,9 +458,9 @@ function fidelityGate(toolName, toolText, summary, reasonLabel) {
     /* observability never blocks delivery */
   }
   log(
-    `diagnostic_fidelity ${fidelity.gate} tool=${toolName} reason=${reasonLabel} missing=${fidelity.missing.map((m) => `${m.type}@${m.line}`).join(",")}`
+    `diagnostic_fidelity state=${fidelity.state} verdict=${fidelity.verdict} tool=${toolName} reason=${reasonLabel} missing=${fidelity.missing.map((m) => `${m.type}@${m.line}`).join(",")}`
   );
-  return { proceed: fidelity.gate === "pass", fidelity };
+  return { proceed, fidelity };
 }
 
 function main() {
