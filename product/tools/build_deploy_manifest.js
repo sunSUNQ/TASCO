@@ -48,6 +48,7 @@ function isExcludedShipped(rel) {
   if (rel.includes("__pycache__")) return true;
   if (rel.endsWith(".pyc") || rel.endsWith(".pyo")) return true;
   if (rel === "product" || rel.startsWith("product/")) return true; // build tooling, not product
+  if (rel === "docs" || rel.startsWith("docs/")) return true; // review/audit metadata, not product payload
   return false;
 }
 
